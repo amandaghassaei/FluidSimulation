@@ -20,14 +20,36 @@
     <script id="2d-render-shader" type="x-shader/x-fragment">
         precision mediump float;
 
-        uniform sampler2D u_image;
-        uniform vec2 u_textureSize;
-
-        const float COLOR_MIN = 0.2, COLOR_MAX = 0.4;
+        //uniform sampler2D u_velocities;
+        //uniform vec2 u_textureSize;
 
         void main() {
-            float v = (COLOR_MAX - texture2D(u_image, gl_FragCoord.xy / u_textureSize)).y / (COLOR_MAX - COLOR_MIN);
-            gl_FragColor = vec4(v, v, v, 1);
+            gl_FragColor = vec4(1, 0, 1, 1);
+        }
+    </script>
+
+     <script id="advectShader" type="x-shader/x-fragment">
+        precision mediump float;
+
+        //uniform sampler2D u_velocities;
+        //uniform sampler2D u_material;
+
+        //uniform vec2 u_textureSize;
+
+        //uniform float u_dt;
+
+        void main() {
+
+            //vec2 fragCoord = gl_FragCoord.xy;
+
+            //vec2 currentVelocity = texture2D(u_velocities, fragCoord/u_textureSize).xy;
+
+            //implicitly solve advection
+            //vec2 pos = fragCoord - u_dt * currentVelocity;
+
+            // bilinear interp between nearest cells
+            //gl_FragColor = texture2D(u_material, pos/u_textureSize);
+            gl_FragColor = vec4(1,1,1,1);
         }
     </script>
 
@@ -74,7 +96,8 @@
     <script type="text/javascript" src="dependencies/jquery-3.1.0.min.js"></script>
     <script type="text/javascript" src="dependencies/flat-ui.min.js"></script>
 
-    <script type="text/javascript" src="GlBoilerplate.js"></script>
+    <script type="text/javascript" src="GLBoilerplate.js"></script>
+    <script type="text/javascript" src="GPUMath.js"></script>
     <script type="text/javascript" src="main.js"></script>
 </head>
 <body>
@@ -89,9 +112,10 @@
             <div class="modal-body">
                 <b>Fluid Simulation Shader</b><br/><br/>
                 I used the following sources to write this simulation:<br/><br/>
-                <a href="https://pdfs.semanticscholar.org/84b8/c7b7eecf90ebd9d54a51544ca0f8ff93c137.pdf" target="_blank">Real-time ink simulation using a grid-particle method</a><br/>
+                <a href="https://pdfs.semanticscholar.org/84b8/c7b7eecf90ebd9d54a51544ca0f8ff93c137.pdf" target="_blank">Real-time ink simulation using a grid-particle method</a> - a method for real-time simulation of ink
+                in water using a coarse-grained fluid simulation with a particle simulation on top.<br/>
                 <a href="http://http.developer.nvidia.com/GPUGems/gpugems_ch38.html" target="_blank">Fast Fluid Dynamics Simulation on the GPU</a> - a very well written tutorial about programming the Navier-Stokes equations on a GPU.<br/>
-                <a href="http://www.dgp.toronto.edu/people/stam/reality/Research/pdf/ns.pdf" target="_blank">Stable Fluids</a> - a paper about numerical methods for evaluating Navier-Stokes on a discrete grid.<br/>
+                <a href="http://www.dgp.toronto.edu/people/stam/reality/Research/pdf/ns.pdf" target="_blank">Stable Fluids</a> - a paper about stable numerical methods for evaluating Navier-Stokes on a discrete grid.<br/>
                 <br/>
                 By <a href="http://www.amandaghassaei.com/" target="_blank">Amanda Ghassaei</a>, code on <a href="https://github.com/amandaghassaei/FluidSimulation" target="_blank">Github</a>.
                 <br/><br/>
