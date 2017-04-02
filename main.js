@@ -20,7 +20,7 @@ var textureSizeLocationRender;
 var mouseCoordLocation;
 var mouseCoordinates =  [null, null];
 var mouseEnableLocation;
-var mouseEnable = true;
+var mouseEnable = false;
 
 var paused = false;//while window is resizing
 
@@ -40,11 +40,8 @@ function initGL() {
 
     canvas.onmousemove = onMouseMove;
     canvas.onmousedown = onMouseDown;
-    // canvas.onmouseup = onMouseUp;
+    canvas.onmouseup = onMouseUp;
     canvas.onmouseout = onMouseUp;
-    canvas.onmouseenter = function(){
-        mouseEnable = 1;
-    };
 
     window.onresize = onResize;
 
@@ -214,9 +211,10 @@ function onMouseMove(e){
 
 function onMouseDown(e){
     // gl.useProgram(stepProgram);
+    mouseEnable = true;
     mouseCoordinates = [e.clientX, height-e.clientY];
 }
 
 function onMouseUp(){
-    mouseEnable = 0;
+    mouseEnable = false;
 }
