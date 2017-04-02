@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Fluid Simulation</title>
+
+    <link rel="stylesheet" type="text/css" href="dependencies/bootstrap.min.css">
+    <link rel="stylesheet" type="text/css" href="dependencies/flat-ui.min.css">
+    <link rel="stylesheet" type="text/css" href="main.css">
+
+    <script id="2d-vertex-shader" type="x-shader/x-vertex">
+
+        attribute vec2 a_position;
+
+        void main() {
+           gl_Position = vec4(a_position, 0, 1);
+        }
+    </script>
+
+    <script id="2d-render-shader" type="x-shader/x-fragment">
+        precision mediump float;
+
+        uniform sampler2D u_image;
+        uniform vec2 u_textureSize;
+
+        const float COLOR_MIN = 0.2, COLOR_MAX = 0.4;
+
+        void main() {
+            float v = (COLOR_MAX - texture2D(u_image, gl_FragCoord.xy / u_textureSize)).y / (COLOR_MAX - COLOR_MIN);
+            gl_FragColor = vec4(v, v, v, 1);
+        }
+    </script>
+
+    <script id="2d-fragment-shader" type="x-shader/x-fragment">
+        precision mediump float;
+        #define M_PI 3.1415926535897932384626433832795
+
+        //texture array
+        uniform sampler2D u_image;//u, v, --, -- = r, g, b, a
+
+        uniform vec2 u_textureSize;
+
+        uniform vec2 u_mouseCoord;
+        uniform float u_mouseEnable;
+
+	    const float dt = 1.0;
+
+        void main() {
+
+            vec2 fragCoord = gl_FragCoord.xy;
+
+            vec2 currentState = texture2D(u_image, fragCoord/u_textureSize).xy;
+            float u = currentState.x;
+            float v = currentState.y;
+
+            vec2 n = texture2D(u_image, (fragCoord + vec2(0.0, 1.0))/u_textureSize).xy;//north
+            vec2 s = texture2D(u_image, (fragCoord + vec2(0.0, -1.0))/u_textureSize).xy;//south
+            vec2 e = texture2D(u_image, (fragCoord + vec2(-1.0, 0.0))/u_textureSize).xy;//east
+            vec2 w = texture2D(u_image, (fragCoord + vec2(1.0, 0.0))/u_textureSize).xy;//west
+
+            if (u_mouseEnable == 1.0){
+                vec2 pxDistFromMouse = (fragCoord - u_mouseCoord)*(fragCoord - u_mouseCoord);
+                float tol = 10.0;
+                if (length(pxDistFromMouse)<tol){
+                    gl_FragColor = vec4(0.5, 0.35, 0, 1);
+                    return;
+                }
+            }
+
+            gl_FragColor = vec4(0,0, 0, 1);
+        }
+    </script>
+
+    <script type="text/javascript" src="dependencies/jquery-3.1.0.min.js"></script>
+    <script type="text/javascript" src="dependencies/flat-ui.min.js"></script>
+
+    <script type="text/javascript" src="GlBoilerplate.js"></script>
+    <script type="text/javascript" src="main.js"></script>
+</head>
+<body>
+
+<canvas id="glcanvas"></canvas>
+
+<a href="#" id="about">?</a>
+
+<div class="modal fade" id="aboutModal" tabindex="-1" role="dialog" aria-labelledby="basicModal" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-body">
+                <b>Fluid Simulation Shader</b><br/><br/>
+                <br/><br/>
+                By <a href="http://www.amandaghassaei.com/" target="_blank">Amanda Ghassaei</a>, code on <a href="https://github.com/amandaghassaei/ReactionDiffusionShader" target="_blank">Github</a>.
+                <br/><br/>
+            </div>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>
