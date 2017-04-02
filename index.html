@@ -64,8 +64,8 @@
             vec2 ceiled = ceil(pos);
             vec2 floored = floor(pos);
 
-            float n = texture2D(u_material, (ceiled+pxCenter)/u_textureSize).x;;
-            float s = texture2D(u_material, (floored+pxCenter)/u_textureSize).x;
+            float n = texture2D(u_material, (ceiled+pxCenter)/u_textureSize).x;//actually ne
+            float s = texture2D(u_material, (floored+pxCenter)/u_textureSize).x;//actually sw
             if (ceiled.x != floored.x){
                 float se = texture2D(u_material, (vec2(ceiled.x, floored.y)+pxCenter)/u_textureSize).x;
                 float nw = texture2D(u_material, (vec2(floored.x, ceiled.y)+pxCenter)/u_textureSize).x;

@@ -62,10 +62,19 @@ function render(){
         //     gl.uniform2f(mouseCoordLocation, mouseCoordinates[0], mouseCoordinates[1]);
         // } else gl.uniform1f(mouseEnableLocation, 0);
 
+        // Apply the first 3 operators in Equation 12.
+        // u = advect(u);
+        // u = diffuse(u);
+        // u = addForces(u);
+        // // Now apply the projection operator to the result.
+        // p = computePressure(u);
+        // u = subtractPressureGradient(u, p);
+
+        GPU.step("advect", ["velocity", "velocity"], "advectedVelocity");//advect velocity
+        GPU.swapTextures("velocity", "advectedVelocity");
+
         GPU.step("advect", ["velocity", "material"], "advectedMaterial");
-
         GPU.step("render", ["advectedMaterial"]);
-
         GPU.swapTextures("advectedMaterial", "material");
 
     } else resetWindow();
@@ -96,11 +105,13 @@ function resetWindow(){
     for (var i=0;i<height;i++){
         for (var j=0;j<width;j++){
             var index = 4*(i*width+j);
-            velocity[index] = i/100;
-            velocity[index+1] = j/100;
+            velocity[index] = i/1000;
+            velocity[index+1] = j/1000;
         }
     }
     GPU.initTextureFromData("velocity", width, height, "FLOAT", velocity, true);
+    GPU.initTextureFromData("advectedVelocity", width, height, "FLOAT", new Float32Array(width*height*4), true);
+    GPU.initFrameBufferForTexture("advectedVelocity");
     var material = new Float32Array(width*height*4);
     for (var i=0;i<height;i++){
         for (var j=0;j<width;j++){
