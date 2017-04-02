@@ -20,35 +20,37 @@
     <script id="2d-render-shader" type="x-shader/x-fragment">
         precision mediump float;
 
-        //uniform sampler2D u_velocities;
-        //uniform vec2 u_textureSize;
+        uniform sampler2D u_velocity;
+        uniform vec2 u_textureSize;
 
         void main() {
-            gl_FragColor = vec4(1, 0, 1, 1);
+            vec2 fragCoord = gl_FragCoord.xy;
+            vec2 currentVelocity = texture2D(u_velocity, fragCoord/u_textureSize).xy;
+            gl_FragColor = vec4(currentVelocity.x/4.0, 0, 1, 1);
         }
     </script>
 
      <script id="advectShader" type="x-shader/x-fragment">
         precision mediump float;
 
-        //uniform sampler2D u_velocities;
-        //uniform sampler2D u_material;
+        uniform sampler2D u_velocity;
+        uniform sampler2D u_material;
 
-        //uniform vec2 u_textureSize;
+        uniform vec2 u_textureSize;
 
-        //uniform float u_dt;
+        uniform float u_dt;
 
         void main() {
 
-            //vec2 fragCoord = gl_FragCoord.xy;
+            vec2 fragCoord = gl_FragCoord.xy;
 
-            //vec2 currentVelocity = texture2D(u_velocities, fragCoord/u_textureSize).xy;
+            vec2 currentVelocity = texture2D(u_velocity, fragCoord/u_textureSize).xy;
 
             //implicitly solve advection
-            //vec2 pos = fragCoord - u_dt * currentVelocity;
+            vec2 pos = fragCoord - u_dt * currentVelocity;
 
-            // bilinear interp between nearest cells
-            //gl_FragColor = texture2D(u_material, pos/u_textureSize);
+            // todo bilinear interp between nearest cells
+            gl_FragColor = texture2D(u_material, pos/u_textureSize);
             gl_FragColor = vec4(1,1,1,1);
         }
     </script>

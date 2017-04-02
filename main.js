@@ -31,13 +31,23 @@ function initGL() {
 
     GPU = initGPUMath();
 
+    canvas.width = canvas.clientWidth;
+    canvas.height = canvas.clientHeight;
+    width = canvas.clientWidth;
+    height = canvas.clientHeight;
+
     // setup a GLSL programs
     GPU.createProgram("advect", "2d-vertex-shader", "advectShader");
+    GPU.setUniformForProgram("advect" ,"u_textureSize", [width, height], "2f");
+    GPU.setUniformForProgram("advect", "u_velocity", 0, "1i");
+    GPU.setUniformForProgram("advect", "u_material", 1, "1i");
+
     GPU.createProgram("render", "2d-vertex-shader", "2d-render-shader");
+    GPU.setUniformForProgram("render" ,"u_textureSize", [width, height], "2f");
+    GPU.setUniformForProgram("render", "u_velocity", 0, "1i");
 
     resetWindow();
 
-    GPU.initFrameBufferForTexture("velocities");
 
     render();
 }
@@ -53,7 +63,9 @@ function render(){
         //     gl.uniform2f(mouseCoordLocation, mouseCoordinates[0], mouseCoordinates[1]);
         // } else gl.uniform1f(mouseEnableLocation, 0);
 
-        GPU.step("render", []);
+        GPU.step("advect", ["velocity", "material"], "advectedMaterial");
+
+        GPU.step("render", ["velocity"]);
 
     } else resetWindow();
 
@@ -79,12 +91,19 @@ function resetWindow(){
 
     GPU.setSize(width, height);
 
-
-    GPU.setUniformForProgram("advect" ,"u_textureSize", [width, height], "2f");
-
-
-    var velocities = new Float32Array(width*height*4);
-    GPU.initTextureFromData("velocities", width, height, "FLOAT", velocities, true);
+    var velocity = new Float32Array(width*height*4);
+    for (var i=0;i<height;i++){
+        for (var j=0;j<width;j++){
+            var index = 4*(i*width+j);
+            velocity[index] = i/100;
+        }
+    }
+    GPU.initTextureFromData("velocity", width, height, "FLOAT", velocity, true);
+    var material = new Float32Array(width*height*4);
+    GPU.initTextureFromData("material", width, height, "FLOAT", material, true);
+    GPU.initFrameBufferForTexture("material");
+    GPU.initTextureFromData("advectedMaterial", width, height, "FLOAT", new Float32Array(width*height*4), true);
+    GPU.initFrameBufferForTexture("advectedMaterial");
 
     paused = false;
 }
