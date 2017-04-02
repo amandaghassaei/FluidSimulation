@@ -97,6 +97,7 @@ function resetWindow(){
         for (var j=0;j<width;j++){
             var index = 4*(i*width+j);
             velocity[index] = i/100;
+            velocity[index+1] = j/100;
         }
     }
     GPU.initTextureFromData("velocity", width, height, "FLOAT", velocity, true);
