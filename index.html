@@ -46,7 +46,7 @@
             vec2 currentVelocity = texture2D(u_velocity, fragCoord/u_textureSize).xy;
 
             //implicitly solve advection
-
+            
             if (length(currentVelocity) == 0.0) {//no velocity
                 gl_FragColor = vec4(texture2D(u_material, fragCoord/u_textureSize).x, 0, 0, 0);
                 return;
