@@ -181,7 +181,7 @@
 
             vec2 currentVelocity;
             if (u_scale == 1.0) currentVelocity = 1.0/u_scale*texture2D(u_velocity, fragCoord/u_textureSize).xy;
-            else currentVelocity = 1.0/u_scale*bilinearInterp((fragCoord-pxCenter)*u_scale + pxCenter, u_velocity, u_textureSize*u_scale);
+            else currentVelocity = 1.0/u_scale*bilinearInterp((fragCoord-pxCenter)*u_scale, u_velocity, u_textureSize*u_scale);
 
             //implicitly solve advection
 
@@ -192,13 +192,12 @@
 
             vec2 pos = fragCoord - pxCenter - u_dt*currentVelocity;
 
-            //periodic boundary
-            if (pos.x < 0.0) pos.x += u_textureSize.x-1.0;
-            if (pos.x >= u_textureSize.x-1.0) pos.x -= u_textureSize.x-1.0;
-            if (pos.y < 0.0) pos.y += u_textureSize.y-1.0;
-            if (pos.y >= u_textureSize.y-1.0) pos.y -= u_textureSize.y-1.0;
+            vec2 materialVal;
+            //empty boundary
+            if (pos.x < 0.0 || pos.x >= u_textureSize.x-1.0 || pos.y < 0.0 || pos.y >= u_textureSize.y-1.0) materialVal = vec2(0.0);
+            else materialVal = bilinearInterp(pos, u_material, u_textureSize);
 
-            gl_FragColor = vec4(bilinearInterp(pos, u_material, u_textureSize), 0, 0);
+            gl_FragColor = vec4(materialVal, 0, 0);
         }
     </script>
 
