@@ -48,11 +48,13 @@ function initGPUMath(){
 
 
 
-    GPUMath.prototype.initFrameBufferForTexture = function(textureName){
-        var framebuffer = this.frameBuffers[textureName];
-        if (framebuffer) {
-            console.warn("framebuffer already exists for texture " + textureName);
-            return;
+    GPUMath.prototype.initFrameBufferForTexture = function(textureName, shouldReplace){
+        if (!shouldReplace) {
+            var framebuffer = this.frameBuffers[textureName];
+            if (framebuffer) {
+                console.warn("framebuffer already exists for texture " + textureName);
+                return;
+            }
         }
         var texture = this.textures[textureName];
         if (!texture){

@@ -42,41 +42,31 @@ function initGL() {
 
     // setup a GLSL programs
     GPU.createProgram("advect", "2d-vertex-shader", "advectShader");
-    GPU.setUniformForProgram("advect" ,"u_textureSize", [width, height], "2f");
     GPU.setUniformForProgram("advect", "u_dt", dt, "1f");
     GPU.setUniformForProgram("advect", "u_velocity", 0, "1i");
     GPU.setUniformForProgram("advect", "u_material", 1, "1i");
 
     GPU.createProgram("gradientSubtraction", "2d-vertex-shader", "gradientSubtractionShader");
-    GPU.setUniformForProgram("gradientSubtraction" ,"u_textureSize", [width, height], "2f");
     GPU.setUniformForProgram("gradientSubtraction", "u_const", 0.5/dx, "1f");//dt/(2*rho*dx)
     GPU.setUniformForProgram("gradientSubtraction", "u_velocity", 0, "1i");
     GPU.setUniformForProgram("gradientSubtraction", "u_pressure", 1, "1i");
 
     GPU.createProgram("diverge", "2d-vertex-shader", "divergenceShader");
-    GPU.setUniformForProgram("diverge" ,"u_textureSize", [width, height], "2f");
     GPU.setUniformForProgram("diverge", "u_const", 0.5/dx, "1f");//-2*dx*rho/dt
     GPU.setUniformForProgram("diverge", "u_velocity", 0, "1i");
 
     GPU.createProgram("force", "2d-vertex-shader", "forceShader");
-    GPU.setUniformForProgram("force" ,"u_textureSize", [width, height], "2f");
     GPU.setUniformForProgram("force", "u_dt", dt, "1f");
     GPU.setUniformForProgram("force", "u_velocity", 0, "1i");
 
     GPU.createProgram("jacobi", "2d-vertex-shader", "jacobiShader");
-    GPU.setUniformForProgram("jacobi" ,"u_textureSize", [width, height], "2f");
-    var alpha = dx*dx/(nu*dt);
-    GPU.setUniformForProgram("jacobi", "u_alpha", alpha, "1f");
-    GPU.setUniformForProgram("jacobi", "u_reciprocalBeta", 1/(4+alpha), "1f");
     GPU.setUniformForProgram("jacobi", "u_b", 0, "1i");
     GPU.setUniformForProgram("jacobi", "u_x", 1, "1i");
 
     GPU.createProgram("render", "2d-vertex-shader", "2d-render-shader");
-    GPU.setUniformForProgram("render" ,"u_textureSize", [width, height], "2f");
     GPU.setUniformForProgram("render", "u_material", 0, "1i");
 
     resetWindow();
-
 
     render();
 }
@@ -139,24 +129,30 @@ function render(){
     window.requestAnimationFrame(render);
 }
 
-function step(i){
-    gl.bindFramebuffer(gl.FRAMEBUFFER, frameBuffers[(i+1)%2]);
-    gl.bindTexture(gl.TEXTURE_2D, states[i%2]);
-
-    gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);//draw to framebuffer
-}
-
 function onResize(){
     paused = true;
 }
 
 function resetWindow(){
-    // canvas.width = canvas.clientWidth;
-    // canvas.height = canvas.clientHeight;
-    // width = canvas.clientWidth;
-    // height = canvas.clientHeight;
+    canvas.width = canvas.clientWidth;
+    canvas.height = canvas.clientHeight;
+    width = canvas.clientWidth;
+    height = canvas.clientHeight;
 
     GPU.setSize(width, height);
+
+    GPU.setProgram("advect");
+    GPU.setUniformForProgram("advect" ,"u_textureSize", [width, height], "2f");
+    GPU.setProgram("gradientSubtraction");
+    GPU.setUniformForProgram("gradientSubtraction" ,"u_textureSize", [width, height], "2f");
+    GPU.setProgram("diverge");
+    GPU.setUniformForProgram("diverge" ,"u_textureSize", [width, height], "2f");
+    GPU.setProgram("force");
+    GPU.setUniformForProgram("force" ,"u_textureSize", [width, height], "2f");
+    GPU.setProgram("jacobi");
+    GPU.setUniformForProgram("jacobi" ,"u_textureSize", [width, height], "2f");
+    GPU.setProgram("render");
+    GPU.setUniformForProgram("render" ,"u_textureSize", [width, height], "2f");
 
     var velocity = new Float32Array(width*height*4);
     // for (var i=0;i<height;i++){
@@ -167,16 +163,16 @@ function resetWindow(){
     //     }
     // }
     GPU.initTextureFromData("velocity", width, height, "FLOAT", velocity, true);
-    GPU.initFrameBufferForTexture("velocity");
+    GPU.initFrameBufferForTexture("velocity", true);
     GPU.initTextureFromData("nextVelocity", width, height, "FLOAT", new Float32Array(width*height*4), true);
-    GPU.initFrameBufferForTexture("nextVelocity");
+    GPU.initFrameBufferForTexture("nextVelocity", true);
 
     GPU.initTextureFromData("velocityDivergence", width, height, "FLOAT", new Float32Array(width*height*4), true);
-    GPU.initFrameBufferForTexture("velocityDivergence");
+    GPU.initFrameBufferForTexture("velocityDivergence", true);
     GPU.initTextureFromData("pressure", width, height, "FLOAT", new Float32Array(width*height*4), true);
-    GPU.initFrameBufferForTexture("pressure");
+    GPU.initFrameBufferForTexture("pressure", true);
     GPU.initTextureFromData("nextPressure", width, height, "FLOAT", new Float32Array(width*height*4), true);
-    GPU.initFrameBufferForTexture("nextPressure");
+    GPU.initFrameBufferForTexture("nextPressure", true);
 
     var material = new Float32Array(width*height*4);
     for (var i=0;i<height;i++){
@@ -187,9 +183,9 @@ function resetWindow(){
         }
     }
     GPU.initTextureFromData("material", width, height, "FLOAT", material, true);
-    GPU.initFrameBufferForTexture("material");
-    GPU.initTextureFromData("nextMaterial", width, height, "FLOAT", new Float32Array(width*height*4), true);
-    GPU.initFrameBufferForTexture("nextMaterial");
+    GPU.initFrameBufferForTexture("material", true);
+    GPU.initTextureFromData("nextMaterial", width, height, "FLOAT", material, true);
+    GPU.initFrameBufferForTexture("nextMaterial", true);
 
     paused = false;
 }
