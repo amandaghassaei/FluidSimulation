@@ -29,6 +29,36 @@
         }
     </script>
 
+    <script id="forceShader" type="x-shader/x-fragment">
+        precision mediump float;
+
+        uniform sampler2D u_velocity;
+
+        uniform vec2 u_textureSize;
+
+        uniform vec2 u_mouseCoord;
+        uniform vec2 u_mouseDir;
+        uniform float u_mouseEnable;
+
+        uniform float u_dt;
+
+        const float reciprocalRadius = 0.01;
+
+        void main() {
+
+            vec2 fragCoord = gl_FragCoord.xy;
+
+            vec2 currentVelocity = texture2D(u_velocity, fragCoord/u_textureSize).xy;
+
+            if (u_mouseEnable == 1.0){
+                vec2 pxDist = fragCoord - u_mouseCoord;
+                currentVelocity += u_mouseDir*u_dt*exp(-(pxDist.x*pxDist.x+pxDist.y*pxDist.y)*reciprocalRadius);
+            }
+
+            gl_FragColor = vec4(currentVelocity, 0, 0);
+        }
+    </script>
+
      <script id="diffuseShader" type="x-shader/x-fragment">
         precision mediump float;
 
@@ -77,7 +107,7 @@
             //implicitly solve advection
 
             if (length(currentVelocity) == 0.0) {//no velocity
-                gl_FragColor = vec4(texture2D(u_material, fragCoord/u_textureSize).x, 0, 0, 0);
+                gl_FragColor = vec4(texture2D(u_material, fragCoord/u_textureSize).xy, 0, 0);
                 return;
             }
 
@@ -93,20 +123,20 @@
             vec2 ceiled = ceil(pos);
             vec2 floored = floor(pos);
 
-            float n = texture2D(u_material, (ceiled+pxCenter)/u_textureSize).x;//actually ne
-            float s = texture2D(u_material, (floored+pxCenter)/u_textureSize).x;//actually sw
+            vec2 n = texture2D(u_material, (ceiled+pxCenter)/u_textureSize).xy;//actually ne
+            vec2 s = texture2D(u_material, (floored+pxCenter)/u_textureSize).xy;//actually sw
             if (ceiled.x != floored.x){
-                float se = texture2D(u_material, (vec2(ceiled.x, floored.y)+pxCenter)/u_textureSize).x;
-                float nw = texture2D(u_material, (vec2(floored.x, ceiled.y)+pxCenter)/u_textureSize).x;
+                vec2 se = texture2D(u_material, (vec2(ceiled.x, floored.y)+pxCenter)/u_textureSize).xy;
+                vec2 nw = texture2D(u_material, (vec2(floored.x, ceiled.y)+pxCenter)/u_textureSize).xy;
                 n = n*(pos.x-floored.x) + nw*(ceiled.x-pos.x);
                 s = se*(pos.x-floored.x) + s*(ceiled.x-pos.x);
             }
-            float materialVal = n;
+            vec2 materialVal = n;
             if (ceiled.y != floored.y){
                 materialVal = n*(pos.y-floored.y) + s*(ceiled.y-pos.y);
             }
 
-            gl_FragColor = vec4(materialVal, 0, 0, 0);
+            gl_FragColor = vec4(materialVal, 0, 0);
         }
     </script>
 

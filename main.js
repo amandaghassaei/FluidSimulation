@@ -2,9 +2,8 @@
 
 var width, height;
 
-var mouseCoordLocation;
-var mouseCoordinates =  [null, null];
-var mouseEnableLocation;
+var lastMouseCoordinates =  [0,0];
+var mouseCoordinates =  [0,0];
 var mouseEnable = false;
 
 var paused = false;//while window is resizing
@@ -47,6 +46,11 @@ function initGL() {
     GPU.setUniformForProgram("advect", "u_velocity", 0, "1i");
     GPU.setUniformForProgram("advect", "u_material", 1, "1i");
 
+    GPU.createProgram("force", "2d-vertex-shader", "forceShader");
+    GPU.setUniformForProgram("force" ,"u_textureSize", [width, height], "2f");
+    GPU.setUniformForProgram("force", "u_dt", dt, "1f");
+    GPU.setUniformForProgram("force", "u_velocity", 0, "1i");
+
     GPU.createProgram("diffuse", "2d-vertex-shader", "diffuseShader");
     GPU.setUniformForProgram("diffuse" ,"u_textureSize", [width, height], "2f");
     var alpha = dx*dx/(nu*dt);
@@ -68,11 +72,6 @@ function render(){
 
     if (!paused) {
 
-        // if (mouseEnable){
-        //     gl.uniform1f(mouseEnableLocation, 1);
-        //     gl.uniform2f(mouseCoordLocation, mouseCoordinates[0], mouseCoordinates[1]);
-        // } else gl.uniform1f(mouseEnableLocation, 0);
-
         // Apply the first 3 operators in Equation 12.
         // u = advect(u);
         // u = diffuse(u);
@@ -83,14 +82,26 @@ function render(){
 
         GPU.step("advect", ["velocity", "velocity"], "nextVelocity");//advect velocity
         GPU.swapTextures("velocity", "nextVelocity");
-        for (var i=0;i<10;i++){
+        for (var i=0;i<1;i++){
             GPU.step("diffuse", ["velocity"], "nextVelocity");//diffuse velocity
             GPU.step("diffuse", ["nextVelocity"], "velocity");//diffuse velocity
         }
-        
+        GPU.setProgram("force");
+        if (mouseEnable){
+            GPU.setUniformForProgram("force", "u_mouseEnable", 1.0, "1f");
+            GPU.setUniformForProgram("force", "u_mouseCoord", [mouseCoordinates[0], mouseCoordinates[1]], "2f");
+            GPU.setUniformForProgram("force", "u_mouseDir", [mouseCoordinates[0]-lastMouseCoordinates[0],
+                mouseCoordinates[1]-lastMouseCoordinates[1]], "2f");
+        } else {
+            GPU.setUniformForProgram("force", "u_mouseEnable", 0.0, "1f");
+        }
+        GPU.step("force", ["velocity"], "nextVelocity");
+        GPU.swapTextures("velocity", "nextVelocity");
+
 
         // GPU.step("diffuse", ["material"], "nextMaterial");
         GPU.step("advect", ["velocity", "material"], "nextMaterial");
+        // GPU.step("force", ["material"], "nextMaterial");
         GPU.step("render", ["nextMaterial"]);
         GPU.swapTextures("nextMaterial", "material");
 
@@ -122,11 +133,12 @@ function resetWindow(){
     for (var i=0;i<height;i++){
         for (var j=0;j<width;j++){
             var index = 4*(i*width+j);
-            velocity[index] = i/1000;
-            velocity[index+1] = j/1000;
+            // velocity[index] = i/1000;
+            // velocity[index+1] = j/1000;
         }
     }
     GPU.initTextureFromData("velocity", width, height, "FLOAT", velocity, true);
+    GPU.initFrameBufferForTexture("velocity");
     GPU.initTextureFromData("nextVelocity", width, height, "FLOAT", new Float32Array(width*height*4), true);
     GPU.initFrameBufferForTexture("nextVelocity");
     var material = new Float32Array(width*height*4);
@@ -145,13 +157,12 @@ function resetWindow(){
 }
 
 function onMouseMove(e){
+    lastMouseCoordinates = mouseCoordinates;
     mouseCoordinates = [e.clientX, height-e.clientY];
 }
 
-function onMouseDown(e){
-    // gl.useProgram(stepProgram);
+function onMouseDown(){
     mouseEnable = true;
-    mouseCoordinates = [e.clientX, height-e.clientY];
 }
 
 function onMouseUp(){
