@@ -75,24 +75,21 @@ function render(){
 
     if (!paused) {
 
-        // Apply the first 3 operators in Equation 12.
-        // u = advect(u);
-        // u = diffuse(u);
-        // u = addForces(u);
-        // // Now apply the projection operator to the result.
-        // p = computePressure(u);
-        // u = subtractPressureGradient(u, p);
-
-        GPU.step("advect", ["velocity", "velocity"], "nextVelocity");//advect velocity
+        //advect velocity
+        GPU.step("advect", ["velocity", "velocity"], "nextVelocity");
         GPU.swapTextures("velocity", "nextVelocity");
+
+        //diffuse velocity
         GPU.setProgram("jacobi");
         var alpha = dx*dx/(nu*dt);
         GPU.setUniformForProgram("jacobi", "u_alpha", alpha, "1f");
         GPU.setUniformForProgram("jacobi", "u_reciprocalBeta", 1/(4+alpha), "1f");
         for (var i=0;i<3;i++){
-            GPU.step("jacobi", ["velocity", "velocity"], "nextVelocity");//diffuse velocity
-            GPU.step("jacobi", ["nextVelocity", "nextVelocity"], "velocity");//diffuse velocity
+            GPU.step("jacobi", ["velocity", "velocity"], "nextVelocity");
+            GPU.step("jacobi", ["nextVelocity", "nextVelocity"], "velocity");
         }
+
+        //apply force
         GPU.setProgram("force");
         if (mouseEnable){
             GPU.setUniformForProgram("force", "u_mouseEnable", 1.0, "1f");
