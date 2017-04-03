@@ -9,6 +9,10 @@ var mouseEnable = false;
 
 var paused = false;//while window is resizing
 
+var dt = 1;
+var dx = 1;
+var nu = 1;//viscosity
+
 var GPU;
 
 window.onload = initGL;
@@ -39,9 +43,16 @@ function initGL() {
     // setup a GLSL programs
     GPU.createProgram("advect", "2d-vertex-shader", "advectShader");
     GPU.setUniformForProgram("advect" ,"u_textureSize", [width, height], "2f");
-    GPU.setUniformForProgram("advect", "u_dt", 1.0, "1f");
+    GPU.setUniformForProgram("advect", "u_dt", dt, "1f");
     GPU.setUniformForProgram("advect", "u_velocity", 0, "1i");
     GPU.setUniformForProgram("advect", "u_material", 1, "1i");
+
+    GPU.createProgram("diffuse", "2d-vertex-shader", "diffuseShader");
+    GPU.setUniformForProgram("diffuse" ,"u_textureSize", [width, height], "2f");
+    var alpha = dx*dx/(nu*dt);
+    GPU.setUniformForProgram("diffuse", "u_alpha", alpha, "1f");
+    GPU.setUniformForProgram("diffuse", "u_reciprocalBeta", 1/(4+alpha), "1f");
+    GPU.setUniformForProgram("diffuse", "u_material", 0, "1i");
 
     GPU.createProgram("render", "2d-vertex-shader", "2d-render-shader");
     GPU.setUniformForProgram("render" ,"u_textureSize", [width, height], "2f");
@@ -70,12 +81,18 @@ function render(){
         // p = computePressure(u);
         // u = subtractPressureGradient(u, p);
 
-        GPU.step("advect", ["velocity", "velocity"], "advectedVelocity");//advect velocity
-        GPU.swapTextures("velocity", "advectedVelocity");
+        GPU.step("advect", ["velocity", "velocity"], "nextVelocity");//advect velocity
+        GPU.swapTextures("velocity", "nextVelocity");
+        for (var i=0;i<10;i++){
+            GPU.step("diffuse", ["velocity"], "nextVelocity");//diffuse velocity
+            GPU.step("diffuse", ["nextVelocity"], "velocity");//diffuse velocity
+        }
+        
 
-        GPU.step("advect", ["velocity", "material"], "advectedMaterial");
-        GPU.step("render", ["advectedMaterial"]);
-        GPU.swapTextures("advectedMaterial", "material");
+        // GPU.step("diffuse", ["material"], "nextMaterial");
+        GPU.step("advect", ["velocity", "material"], "nextMaterial");
+        GPU.step("render", ["nextMaterial"]);
+        GPU.swapTextures("nextMaterial", "material");
 
     } else resetWindow();
 
@@ -110,8 +127,8 @@ function resetWindow(){
         }
     }
     GPU.initTextureFromData("velocity", width, height, "FLOAT", velocity, true);
-    GPU.initTextureFromData("advectedVelocity", width, height, "FLOAT", new Float32Array(width*height*4), true);
-    GPU.initFrameBufferForTexture("advectedVelocity");
+    GPU.initTextureFromData("nextVelocity", width, height, "FLOAT", new Float32Array(width*height*4), true);
+    GPU.initFrameBufferForTexture("nextVelocity");
     var material = new Float32Array(width*height*4);
     for (var i=0;i<height;i++){
         for (var j=0;j<width;j++){
@@ -121,8 +138,8 @@ function resetWindow(){
     }
     GPU.initTextureFromData("material", width, height, "FLOAT", material, true);
     GPU.initFrameBufferForTexture("material");
-    GPU.initTextureFromData("advectedMaterial", width, height, "FLOAT", new Float32Array(width*height*4), true);
-    GPU.initFrameBufferForTexture("advectedMaterial");
+    GPU.initTextureFromData("nextMaterial", width, height, "FLOAT", new Float32Array(width*height*4), true);
+    GPU.initFrameBufferForTexture("nextMaterial");
 
     paused = false;
 }
