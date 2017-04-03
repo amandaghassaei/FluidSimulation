@@ -29,6 +29,31 @@
         }
     </script>
 
+    <script id="gradientSubtractionShader" type="x-shader/x-fragment">
+        precision mediump float;
+
+        uniform sampler2D u_velocity;
+        uniform sampler2D u_pressure;
+
+        uniform vec2 u_textureSize;
+
+        uniform float u_const;
+
+        void main() {
+
+            vec2 fragCoord = gl_FragCoord.xy;
+
+            vec2 currentVelocity = texture2D(u_velocity, fragCoord/u_textureSize).xy;
+
+            float n = texture2D(u_pressure, (fragCoord+vec2(0.0, 1.0))/u_textureSize).x;
+            float s = texture2D(u_pressure, (fragCoord+vec2(0.0, -1.0))/u_textureSize).x;
+            float e = texture2D(u_pressure, (fragCoord+vec2(1.0, 0.0))/u_textureSize).x;
+            float w = texture2D(u_pressure, (fragCoord+vec2(-1.0, 0.0))/u_textureSize).x;
+
+            gl_FragColor = vec4(currentVelocity-u_const*vec2(e-w, n-s), 0, 0);
+        }
+    </script>
+
     <script id="divergenceShader" type="x-shader/x-fragment">
         precision mediump float;
 
@@ -36,7 +61,7 @@
 
         uniform vec2 u_textureSize;
 
-        uniform float u_halfReciprocalDx;
+        uniform float u_const;
 
         void main() {
 
@@ -49,7 +74,8 @@
             float e = texture2D(u_velocity, (fragCoord+vec2(1.0, 0.0))/u_textureSize).x;
             float w = texture2D(u_velocity, (fragCoord+vec2(-1.0, 0.0))/u_textureSize).x;
 
-            gl_FragColor = vec4(u_halfReciprocalDx*(e-w + n-s), 0, 0, 0);
+            float div = u_const*(e-w + n-s);
+            gl_FragColor = vec4(div, div, 0, 0);
         }
     </script>
 
@@ -138,11 +164,16 @@
 
             vec2 pxCenter = vec2(0.5, 0.5);
             vec2 pos = fragCoord - pxCenter - u_dt*currentVelocity;
-            if (pos.x < 0.0 || pos.x >= u_textureSize.x-1.0 || pos.y < 0.0 || pos.y >= u_textureSize.y-1.0){
-                //boundary
-                gl_FragColor = vec4(0);
-                return;
-            }
+            //if (pos.x < 0.0 || pos.x >= u_textureSize.x-1.0 || pos.y < 0.0 || pos.y >= u_textureSize.y-1.0){
+            //    //boundary
+            //    gl_FragColor = vec4(0);
+            //    return;
+            //}
+            //periodic boundary
+            if (pos.x < 0.0) pos.x += u_textureSize.x-1.0;
+            if (pos.x >= u_textureSize.x-1.0) pos.x -= u_textureSize.x-1.0;
+            if (pos.y < 0.0) pos.y += u_textureSize.y-1.0;
+            if (pos.y >= u_textureSize.y-1.0) pos.y -= u_textureSize.y-1.0;
 
             //bilinear interp between nearest cells
             vec2 ceiled = ceil(pos);
@@ -162,46 +193,6 @@
             }
 
             gl_FragColor = vec4(materialVal, 0, 0);
-        }
-    </script>
-
-    <script id="2d-fragment-shader" type="x-shader/x-fragment">
-        precision mediump float;
-        #define M_PI 3.1415926535897932384626433832795
-
-        //texture array
-        uniform sampler2D u_image;//u, v, --, -- = r, g, b, a
-
-        uniform vec2 u_textureSize;
-
-        uniform vec2 u_mouseCoord;
-        uniform float u_mouseEnable;
-
-	    const float dt = 1.0;
-
-        void main() {
-
-            vec2 fragCoord = gl_FragCoord.xy;
-
-            vec2 currentState = texture2D(u_image, fragCoord/u_textureSize).xy;
-            float u = currentState.x;
-            float v = currentState.y;
-
-            vec2 n = texture2D(u_image, (fragCoord + vec2(0.0, 1.0))/u_textureSize).xy;//north
-            vec2 s = texture2D(u_image, (fragCoord + vec2(0.0, -1.0))/u_textureSize).xy;//south
-            vec2 e = texture2D(u_image, (fragCoord + vec2(-1.0, 0.0))/u_textureSize).xy;//east
-            vec2 w = texture2D(u_image, (fragCoord + vec2(1.0, 0.0))/u_textureSize).xy;//west
-
-            if (u_mouseEnable == 1.0){
-                vec2 pxDistFromMouse = (fragCoord - u_mouseCoord)*(fragCoord - u_mouseCoord);
-                float tol = 10.0;
-                if (length(pxDistFromMouse)<tol){
-                    gl_FragColor = vec4(0.5, 0.35, 0, 1);
-                    return;
-                }
-            }
-
-            gl_FragColor = vec4(0,0, 0, 1);
         }
     </script>
 

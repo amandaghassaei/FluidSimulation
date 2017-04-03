@@ -11,6 +11,7 @@ var paused = false;//while window is resizing
 var dt = 1;
 var dx = 1;
 var nu = 1;//viscosity
+var rho = 1;//density
 
 var GPU;
 
@@ -46,9 +47,15 @@ function initGL() {
     GPU.setUniformForProgram("advect", "u_velocity", 0, "1i");
     GPU.setUniformForProgram("advect", "u_material", 1, "1i");
 
+    GPU.createProgram("gradientSubtraction", "2d-vertex-shader", "gradientSubtractionShader");
+    GPU.setUniformForProgram("gradientSubtraction" ,"u_textureSize", [width, height], "2f");
+    GPU.setUniformForProgram("gradientSubtraction", "u_const", 0.5/dx, "1f");//dt/(2*rho*dx)
+    GPU.setUniformForProgram("gradientSubtraction", "u_velocity", 0, "1i");
+    GPU.setUniformForProgram("gradientSubtraction", "u_pressure", 1, "1i");
+
     GPU.createProgram("diverge", "2d-vertex-shader", "divergenceShader");
     GPU.setUniformForProgram("diverge" ,"u_textureSize", [width, height], "2f");
-    GPU.setUniformForProgram("diverge", "u_halfReciprocalDx", 1/(2*dx), "1f");
+    GPU.setUniformForProgram("diverge", "u_const", 0.5/dx, "1f");//-2*dx*rho/dt
     GPU.setUniformForProgram("diverge", "u_velocity", 0, "1i");
 
     GPU.createProgram("force", "2d-vertex-shader", "forceShader");
@@ -88,7 +95,11 @@ function render(){
 
         GPU.step("advect", ["velocity", "velocity"], "nextVelocity");//advect velocity
         GPU.swapTextures("velocity", "nextVelocity");
-        for (var i=0;i<1;i++){
+        GPU.setProgram("jacobi");
+        var alpha = dx*dx/(nu*dt);
+        GPU.setUniformForProgram("jacobi", "u_alpha", alpha, "1f");
+        GPU.setUniformForProgram("jacobi", "u_reciprocalBeta", 1/(4+alpha), "1f");
+        for (var i=0;i<3;i++){
             GPU.step("jacobi", ["velocity", "velocity"], "nextVelocity");//diffuse velocity
             GPU.step("jacobi", ["nextVelocity", "nextVelocity"], "velocity");//diffuse velocity
         }
@@ -104,18 +115,22 @@ function render(){
         GPU.step("force", ["velocity"], "nextVelocity");
         GPU.swapTextures("velocity", "nextVelocity");
 
-        //compute pressure
+        // compute pressure
         GPU.step("diverge", ["velocity"], "velocityDivergence");//calc velocity divergence
-        for (var i=0;i<3;i++){
+        GPU.setProgram("jacobi");
+        GPU.setUniformForProgram("jacobi", "u_alpha", -dx*dx, "1f");
+        GPU.setUniformForProgram("jacobi", "u_reciprocalBeta", 1/4, "1f");
+        for (var i=0;i<20;i++){
             GPU.step("jacobi", ["velocityDivergence", "pressure"], "nextPressure");//diffuse velocity
             GPU.step("jacobi", ["velocityDivergence", "nextPressure"], "pressure");//diffuse velocity
         }
 
-        //subtract pressure gradient
+        // subtract pressure gradient
+        GPU.step("gradientSubtraction", ["velocity", "pressure"], "nextVelocity");
+        GPU.swapTextures("velocity", "nextVelocity");
 
         // GPU.step("diffuse", ["material"], "nextMaterial");
         GPU.step("advect", ["velocity", "material"], "nextMaterial");
-        // GPU.step("force", ["material"], "nextMaterial");
         GPU.step("render", ["nextMaterial"]);
         GPU.swapTextures("nextMaterial", "material");
 
@@ -144,6 +159,13 @@ function resetWindow(){
     GPU.setSize(width, height);
 
     var velocity = new Float32Array(width*height*4);
+    // for (var i=0;i<height;i++){
+    //     for (var j=0;j<width;j++){
+    //         var index = 4*(i*width+j);
+    //         velocity[index] = Math.sin(2*Math.PI*i/200)/10;
+    //         velocity[index+1] = Math.sin(2*Math.PI*j/200)/10;
+    //     }
+    // }
     GPU.initTextureFromData("velocity", width, height, "FLOAT", velocity, true);
     GPU.initFrameBufferForTexture("velocity");
     GPU.initTextureFromData("nextVelocity", width, height, "FLOAT", new Float32Array(width*height*4), true);
@@ -160,7 +182,8 @@ function resetWindow(){
     for (var i=0;i<height;i++){
         for (var j=0;j<width;j++){
             var index = 4*(i*width+j);
-            material[index] = Math.random();
+            if (((Math.floor(i/50))%2 && (Math.floor(j/50))%2)
+                || ((Math.floor(i/50))%2 == 0 && (Math.floor(j/50))%2 == 0)) material[index] = 1.0;
         }
     }
     GPU.initTextureFromData("material", width, height, "FLOAT", material, true);
