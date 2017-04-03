@@ -3,7 +3,7 @@
 var width, height;
 var actualWidth, actualHeight;
 var body;
-var scale = 3.5;
+var scale = 1;
 
 var lastMouseCoordinates =  [0,0];
 var mouseCoordinates =  [0,0];
@@ -96,9 +96,9 @@ function render(){
         GPU.setProgram("force");
         if (mouseEnable){
             GPU.setUniformForProgram("force", "u_mouseEnable", 1.0, "1f");
-            GPU.setUniformForProgram("force", "u_mouseCoord", [mouseCoordinates[0]/scale, mouseCoordinates[1]/scale], "2f");
-            GPU.setUniformForProgram("force", "u_mouseDir", [2*(mouseCoordinates[0]-lastMouseCoordinates[0])/scale,
-                2*(mouseCoordinates[1]-lastMouseCoordinates[1])/scale], "2f");
+            GPU.setUniformForProgram("force", "u_mouseCoord", [mouseCoordinates[0]*scale, mouseCoordinates[1]*scale], "2f");
+            GPU.setUniformForProgram("force", "u_mouseDir", [2*(mouseCoordinates[0]-lastMouseCoordinates[0])*scale,
+                2*(mouseCoordinates[1]-lastMouseCoordinates[1])*scale], "2f");
         } else {
             GPU.setUniformForProgram("force", "u_mouseEnable", 0.0, "1f");
         }
@@ -143,10 +143,12 @@ function resetWindow(){
     actualHeight = body.clientHeight;
 
     var maxDim = Math.max(actualHeight, actualWidth);
-    var scale = maxDim/300;
+    var _scale = maxDim/200;
 
-    width = Math.floor(actualWidth/scale);
-    height = Math.floor(actualHeight/scale);
+    width = Math.floor(actualWidth/_scale);
+    height = Math.floor(actualHeight/_scale);
+
+    scale = (width/actualWidth + height/actualHeight)/2;
 
     canvas.width = actualWidth;
     canvas.height = actualHeight;
@@ -160,7 +162,7 @@ function resetWindow(){
     GPU.setProgram("diverge");
     GPU.setUniformForProgram("diverge" ,"u_textureSize", [width, height], "2f");
     GPU.setProgram("force");
-    GPU.setUniformForProgram("force", "u_reciprocalRadius", 0.1*scale, "1f");
+    GPU.setUniformForProgram("force", "u_reciprocalRadius", 0.1/scale, "1f");
     GPU.setUniformForProgram("force" ,"u_textureSize", [width, height], "2f");
     GPU.setProgram("jacobi");
     GPU.setUniformForProgram("jacobi" ,"u_textureSize", [width, height], "2f");
