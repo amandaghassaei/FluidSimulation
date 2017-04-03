@@ -97,8 +97,8 @@ function render(){
         if (mouseEnable){
             GPU.setUniformForProgram("force", "u_mouseEnable", 1.0, "1f");
             GPU.setUniformForProgram("force", "u_mouseCoord", [mouseCoordinates[0]/scale, mouseCoordinates[1]/scale], "2f");
-            GPU.setUniformForProgram("force", "u_mouseDir", [(mouseCoordinates[0]-lastMouseCoordinates[0])/scale,
-                (mouseCoordinates[1]-lastMouseCoordinates[1])/scale], "2f");
+            GPU.setUniformForProgram("force", "u_mouseDir", [2*(mouseCoordinates[0]-lastMouseCoordinates[0])/scale,
+                2*(mouseCoordinates[1]-lastMouseCoordinates[1])/scale], "2f");
         } else {
             GPU.setUniformForProgram("force", "u_mouseEnable", 0.0, "1f");
         }
@@ -205,7 +205,7 @@ function resetWindow(){
 
 function onMouseMove(e){
     lastMouseCoordinates = mouseCoordinates;
-    mouseCoordinates = [e.clientX, (body.clientHeight-e.clientY)];
+    mouseCoordinates = [e.clientX, actualHeight-e.clientY];
 }
 
 function onMouseDown(){
