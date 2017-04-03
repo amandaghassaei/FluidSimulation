@@ -91,8 +91,8 @@ function initGPUMath(){
 
     GPUMath.prototype.setSize = function(width, height){
         gl.viewport(0, 0, width, height);
-        canvas.clientWidth = width;
-        canvas.clientHeight = height;
+        // canvas.clientWidth = width;
+        // canvas.clientHeight = height;
     };
 
     GPUMath.prototype.setProgram = function(programName){

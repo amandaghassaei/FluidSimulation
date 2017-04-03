@@ -1,6 +1,8 @@
 //used a lot of ideas from https://bl.ocks.org/robinhouston/ed597847175cf692ecce to clean this code up
 
 var width, height;
+var body;
+var scale = 4;
 
 var lastMouseCoordinates =  [0,0];
 var mouseCoordinates =  [0,0];
@@ -25,6 +27,7 @@ function initGL() {
     });
 
     canvas = document.getElementById("glcanvas");
+    body = document.getElementsByTagName("body")[0];
 
     canvas.onmousemove = onMouseMove;
     canvas.onmousedown = onMouseDown;
@@ -34,11 +37,6 @@ function initGL() {
     window.onresize = onResize;
 
     GPU = initGPUMath();
-
-    canvas.width = canvas.clientWidth;
-    canvas.height = canvas.clientHeight;
-    width = canvas.clientWidth;
-    height = canvas.clientHeight;
 
     // setup a GLSL programs
     GPU.createProgram("advect", "2d-vertex-shader", "advectShader");
@@ -57,6 +55,7 @@ function initGL() {
 
     GPU.createProgram("force", "2d-vertex-shader", "forceShader");
     GPU.setUniformForProgram("force", "u_dt", dt, "1f");
+    GPU.setUniformForProgram("force", "u_reciprocalRadius", 0.1*scale, "1f");
     GPU.setUniformForProgram("force", "u_velocity", 0, "1i");
 
     GPU.createProgram("jacobi", "2d-vertex-shader", "jacobiShader");
@@ -84,7 +83,7 @@ function render(){
         var alpha = dx*dx/(nu*dt);
         GPU.setUniformForProgram("jacobi", "u_alpha", alpha, "1f");
         GPU.setUniformForProgram("jacobi", "u_reciprocalBeta", 1/(4+alpha), "1f");
-        for (var i=0;i<3;i++){
+        for (var i=0;i<2;i++){
             GPU.step("jacobi", ["velocity", "velocity"], "nextVelocity");
             GPU.step("jacobi", ["nextVelocity", "nextVelocity"], "velocity");
         }
@@ -131,10 +130,14 @@ function onResize(){
 }
 
 function resetWindow(){
-    canvas.width = canvas.clientWidth;
-    canvas.height = canvas.clientHeight;
-    width = canvas.clientWidth;
-    height = canvas.clientHeight;
+
+    width = Math.floor(body.clientWidth/scale);
+    height = Math.floor(body.clientHeight/scale);
+
+    canvas.width = width;
+    canvas.height = height;
+    canvas.clientWidth = body.clientWidth;
+    canvas.clientHeight = body.clientHeight;
 
     GPU.setSize(width, height);
 
@@ -175,8 +178,8 @@ function resetWindow(){
     for (var i=0;i<height;i++){
         for (var j=0;j<width;j++){
             var index = 4*(i*width+j);
-            if (((Math.floor(i/50))%2 && (Math.floor(j/50))%2)
-                || ((Math.floor(i/50))%2 == 0 && (Math.floor(j/50))%2 == 0)) material[index] = 1.0;
+            if (((Math.floor(i/10))%2 && (Math.floor(j/10))%2)
+                || ((Math.floor(i/10))%2 == 0 && (Math.floor(j/10))%2 == 0)) material[index] = 1.0;
         }
     }
     GPU.initTextureFromData("material", width, height, "FLOAT", material, true);
@@ -189,7 +192,7 @@ function resetWindow(){
 
 function onMouseMove(e){
     lastMouseCoordinates = mouseCoordinates;
-    mouseCoordinates = [e.clientX, height-e.clientY];
+    mouseCoordinates = [e.clientX/scale, (body.clientHeight-e.clientY)/scale];
 }
 
 function onMouseDown(){

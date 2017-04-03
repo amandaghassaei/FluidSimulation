@@ -90,9 +90,9 @@
         uniform vec2 u_mouseDir;
         uniform float u_mouseEnable;
 
-        uniform float u_dt;
+        uniform float u_reciprocalRadius;
 
-        const float reciprocalRadius = 0.01;
+        uniform float u_dt;
 
         void main() {
 
@@ -102,7 +102,7 @@
 
             if (u_mouseEnable == 1.0){
                 vec2 pxDist = fragCoord - u_mouseCoord;
-                currentVelocity += u_mouseDir*u_dt*exp(-(pxDist.x*pxDist.x+pxDist.y*pxDist.y)*reciprocalRadius);
+                currentVelocity += u_mouseDir*u_dt*exp(-(pxDist.x*pxDist.x+pxDist.y*pxDist.y)*u_reciprocalRadius);
             }
 
             gl_FragColor = vec4(currentVelocity, 0, 0);
