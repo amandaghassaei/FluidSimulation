@@ -1,6 +1,7 @@
 //used a lot of ideas from https://bl.ocks.org/robinhouston/ed597847175cf692ecce to clean this code up
 
 var width, height;
+var actualWidth, actualHeight;
 var body;
 var scale = 4;
 
@@ -74,7 +75,11 @@ function render(){
 
     if (!paused) {
 
-        //advect velocity
+        // //advect velocity
+        GPU.setSize(width, height);
+        GPU.setProgram("advect");
+        GPU.setUniformForProgram("advect" ,"u_textureSize", [width, height], "2f");
+        GPU.setUniformForProgram("advect" ,"u_scale", 1, "1f");
         GPU.step("advect", ["velocity", "velocity"], "nextVelocity");
         GPU.swapTextures("velocity", "nextVelocity");
 
@@ -115,7 +120,11 @@ function render(){
         GPU.step("gradientSubtraction", ["velocity", "pressure"], "nextVelocity");
         GPU.swapTextures("velocity", "nextVelocity");
 
-        // GPU.step("diffuse", ["material"], "nextMaterial");
+        // move material
+        GPU.setSize(actualWidth, actualHeight);
+        GPU.setProgram("advect");
+        GPU.setUniformForProgram("advect" ,"u_textureSize", [actualWidth, actualHeight], "2f");
+        GPU.setUniformForProgram("advect" ,"u_scale", scale, "1f");
         GPU.step("advect", ["velocity", "material"], "nextMaterial");
         GPU.step("render", ["nextMaterial"]);
         GPU.swapTextures("nextMaterial", "material");
@@ -131,18 +140,22 @@ function onResize(){
 
 function resetWindow(){
 
-    width = Math.floor(body.clientWidth/scale);
-    height = Math.floor(body.clientHeight/scale);
+    actualWidth = body.clientWidth;
+    actualHeight = body.clientHeight;
 
-    canvas.width = width;
-    canvas.height = height;
+    width = Math.floor(actualWidth/scale);
+    height = Math.floor(actualHeight/scale);
+
+    // actualWidth = width;
+    // actualHeight = height;
+
+    canvas.width = actualWidth;
+    canvas.height = actualHeight;
     canvas.clientWidth = body.clientWidth;
     canvas.clientHeight = body.clientHeight;
 
-    GPU.setSize(width, height);
+    // GPU.setSize(width, height);
 
-    GPU.setProgram("advect");
-    GPU.setUniformForProgram("advect" ,"u_textureSize", [width, height], "2f");
     GPU.setProgram("gradientSubtraction");
     GPU.setUniformForProgram("gradientSubtraction" ,"u_textureSize", [width, height], "2f");
     GPU.setProgram("diverge");
@@ -152,7 +165,7 @@ function resetWindow(){
     GPU.setProgram("jacobi");
     GPU.setUniformForProgram("jacobi" ,"u_textureSize", [width, height], "2f");
     GPU.setProgram("render");
-    GPU.setUniformForProgram("render" ,"u_textureSize", [width, height], "2f");
+    GPU.setUniformForProgram("render" ,"u_textureSize", [actualWidth, actualHeight], "2f");
 
     var velocity = new Float32Array(width*height*4);
     // for (var i=0;i<height;i++){
@@ -174,17 +187,17 @@ function resetWindow(){
     GPU.initTextureFromData("nextPressure", width, height, "FLOAT", new Float32Array(width*height*4), true);
     GPU.initFrameBufferForTexture("nextPressure", true);
 
-    var material = new Float32Array(width*height*4);
-    for (var i=0;i<height;i++){
-        for (var j=0;j<width;j++){
-            var index = 4*(i*width+j);
-            if (((Math.floor(i/10))%2 && (Math.floor(j/10))%2)
-                || ((Math.floor(i/10))%2 == 0 && (Math.floor(j/10))%2 == 0)) material[index] = 1.0;
+    var material = new Float32Array(actualWidth*actualHeight*4);
+    for (var i=0;i<actualHeight;i++){
+        for (var j=0;j<actualWidth;j++){
+            var index = 4*(i*actualWidth+j);
+            if (((Math.floor(i/50))%2 && (Math.floor(j/50))%2)
+                || ((Math.floor(i/50))%2 == 0 && (Math.floor(j/50))%2 == 0)) material[index] = 1.0;
         }
     }
-    GPU.initTextureFromData("material", width, height, "FLOAT", material, true);
+    GPU.initTextureFromData("material", actualWidth, actualHeight, "FLOAT", material, true);
     GPU.initFrameBufferForTexture("material", true);
-    GPU.initTextureFromData("nextMaterial", width, height, "FLOAT", material, true);
+    GPU.initTextureFromData("nextMaterial", actualWidth, actualHeight, "FLOAT", material, true);
     GPU.initFrameBufferForTexture("nextMaterial", true);
 
     paused = false;

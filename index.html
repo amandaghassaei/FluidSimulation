@@ -146,6 +146,7 @@
         uniform sampler2D u_material;
 
         uniform vec2 u_textureSize;
+        uniform float u_scale;
 
         uniform float u_dt;
 
@@ -153,7 +154,7 @@
 
             vec2 fragCoord = gl_FragCoord.xy;
 
-            vec2 currentVelocity = texture2D(u_velocity, fragCoord/u_textureSize).xy;
+            vec2 currentVelocity = u_scale*texture2D(u_velocity, fragCoord/u_textureSize).xy;
 
             //implicitly solve advection
 
