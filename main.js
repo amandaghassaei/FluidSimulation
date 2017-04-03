@@ -3,7 +3,7 @@
 var width, height;
 var actualWidth, actualHeight;
 var body;
-var scale = 4;
+var scale = 3.5;
 
 var lastMouseCoordinates =  [0,0];
 var mouseCoordinates =  [0,0];
@@ -56,7 +56,6 @@ function initGL() {
 
     GPU.createProgram("force", "2d-vertex-shader", "forceShader");
     GPU.setUniformForProgram("force", "u_dt", dt, "1f");
-    GPU.setUniformForProgram("force", "u_reciprocalRadius", 0.1*scale, "1f");
     GPU.setUniformForProgram("force", "u_velocity", 0, "1i");
 
     GPU.createProgram("jacobi", "2d-vertex-shader", "jacobiShader");
@@ -97,9 +96,9 @@ function render(){
         GPU.setProgram("force");
         if (mouseEnable){
             GPU.setUniformForProgram("force", "u_mouseEnable", 1.0, "1f");
-            GPU.setUniformForProgram("force", "u_mouseCoord", [mouseCoordinates[0], mouseCoordinates[1]], "2f");
-            GPU.setUniformForProgram("force", "u_mouseDir", [mouseCoordinates[0]-lastMouseCoordinates[0],
-                mouseCoordinates[1]-lastMouseCoordinates[1]], "2f");
+            GPU.setUniformForProgram("force", "u_mouseCoord", [mouseCoordinates[0]/scale, mouseCoordinates[1]/scale], "2f");
+            GPU.setUniformForProgram("force", "u_mouseDir", [(mouseCoordinates[0]-lastMouseCoordinates[0])/scale,
+                (mouseCoordinates[1]-lastMouseCoordinates[1])/scale], "2f");
         } else {
             GPU.setUniformForProgram("force", "u_mouseEnable", 0.0, "1f");
         }
@@ -143,11 +142,11 @@ function resetWindow(){
     actualWidth = body.clientWidth;
     actualHeight = body.clientHeight;
 
+    var maxDim = Math.max(actualHeight, actualWidth);
+    var scale = maxDim/300;
+
     width = Math.floor(actualWidth/scale);
     height = Math.floor(actualHeight/scale);
-
-    // actualWidth = width;
-    // actualHeight = height;
 
     canvas.width = actualWidth;
     canvas.height = actualHeight;
@@ -161,6 +160,7 @@ function resetWindow(){
     GPU.setProgram("diverge");
     GPU.setUniformForProgram("diverge" ,"u_textureSize", [width, height], "2f");
     GPU.setProgram("force");
+    GPU.setUniformForProgram("force", "u_reciprocalRadius", 0.1*scale, "1f");
     GPU.setUniformForProgram("force" ,"u_textureSize", [width, height], "2f");
     GPU.setProgram("jacobi");
     GPU.setUniformForProgram("jacobi" ,"u_textureSize", [width, height], "2f");
@@ -205,7 +205,7 @@ function resetWindow(){
 
 function onMouseMove(e){
     lastMouseCoordinates = mouseCoordinates;
-    mouseCoordinates = [e.clientX/scale, (body.clientHeight-e.clientY)/scale];
+    mouseCoordinates = [e.clientX, (body.clientHeight-e.clientY)];
 }
 
 function onMouseDown(){
