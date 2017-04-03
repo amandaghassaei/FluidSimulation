@@ -65,6 +65,9 @@ function initGL() {
     GPU.createProgram("render", "2d-vertex-shader", "2d-render-shader");
     GPU.setUniformForProgram("render", "u_material", 0, "1i");
 
+    GPU.createProgram("boundary", "2d-vertex-shader", "boundaryShader");
+    GPU.setUniformForProgram("boundary", "u_texture", 0, "1i");
+
     resetWindow();
 
     render();
@@ -80,7 +83,10 @@ function render(){
         GPU.setUniformForProgram("advect" ,"u_textureSize", [width, height], "2f");
         GPU.setUniformForProgram("advect" ,"u_scale", 1, "1f");
         GPU.step("advect", ["velocity", "velocity"], "nextVelocity");
-        GPU.swapTextures("velocity", "nextVelocity");
+
+        // GPU.setProgram("boundary");
+        // GPU.setUniformForProgram("boundary", "u_scale", -1, "1f");
+        // GPU.stepBoundary("boundary", ["nextVelocity"], "velocity");
 
         //diffuse velocity
         GPU.setProgram("jacobi");
@@ -143,7 +149,7 @@ function resetWindow(){
     actualHeight = body.clientHeight;
 
     var maxDim = Math.max(actualHeight, actualWidth);
-    var _scale = maxDim/200;
+    var _scale = maxDim/150;
 
     width = Math.floor(actualWidth/_scale);
     height = Math.floor(actualHeight/_scale);
@@ -168,6 +174,8 @@ function resetWindow(){
     GPU.setUniformForProgram("jacobi" ,"u_textureSize", [width, height], "2f");
     GPU.setProgram("render");
     GPU.setUniformForProgram("render" ,"u_textureSize", [actualWidth, actualHeight], "2f");
+    GPU.setProgram("boundary");
+    GPU.setUniformForProgram("boundary" ,"u_textureSize", [width, height], "2f");
 
     var velocity = new Float32Array(width*height*4);
     // for (var i=0;i<height;i++){

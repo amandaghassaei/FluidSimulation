@@ -110,6 +110,17 @@ function initGPUMath(){
         gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);//draw to framebuffer
     };
 
+    GPUMath.prototype.stepBoundary = function(programName, inputTextures, outputTexture){
+
+        gl.useProgram(this.programs[programName].program);
+        gl.bindFramebuffer(gl.FRAMEBUFFER, this.frameBuffers[outputTexture]);
+        for (var i=0;i<inputTextures.length;i++){
+            gl.activeTexture(gl.TEXTURE0 + i);
+            gl.bindTexture(gl.TEXTURE_2D, this.textures[inputTextures[i]]);
+        }
+        gl.drawArrays(gl.LINES, 0, 8);//draw to framebuffer
+    };
+
     GPUMath.prototype.swapTextures = function(texture1Name, texture2Name){
         var temp = this.textures[texture1Name];
         this.textures[texture1Name] = this.textures[texture2Name];

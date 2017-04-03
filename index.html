@@ -17,6 +17,28 @@
         }
     </script>
 
+    <script id="boundaryShader" type="x-shader/x-fragment">
+        precision mediump float;
+
+        uniform sampler2D u_texture;
+        uniform float u_scale;
+        uniform vec2 u_textureSize;
+
+        void main() {
+            vec2 fragCoord = gl_FragCoord.xy;
+
+            vec4 neighborVal;
+            if (fragCoord.x < 1.0){
+                neighborVal = texture2D(u_texture, (fragCoord + vec2(1.0, 0.0))/u_textureSize);
+
+                gl_FragColor = u_scale*neighborVal;
+                return;
+            }
+
+            gl_FragColor = texture2D(u_texture, (fragCoord)/u_textureSize);
+        }
+    </script>
+
     <script id="2d-render-shader" type="x-shader/x-fragment">
         precision mediump float;
 
@@ -204,9 +226,9 @@
     <script type="text/javascript" src="dependencies/jquery-3.1.0.min.js"></script>
     <script type="text/javascript" src="dependencies/flat-ui.min.js"></script>
 
-    <script type="text/javascript" src="GLBoilerplate.js"></script>
-    <script type="text/javascript" src="GPUMath.js"></script>
-    <script type="text/javascript" src="main.js"></script>
+    <script type="text/javascript" src="js/GLBoilerplate.js"></script>
+    <script type="text/javascript" src="js/GPUMath.js"></script>
+    <script type="text/javascript" src="js/main.js"></script>
 </head>
 <body>
 
