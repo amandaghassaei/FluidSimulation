@@ -22,11 +22,11 @@ canvas {
     z-index: 5;
     top:0;
     right:0;
-    background: #444;
+    background: rgba(40, 40, 40, 0.7);
     width: 30px;
     text-align: center;
     position: absolute;
-    color: #fff;
+    color: #faefd6;
 }
 
 .sliderInput{
@@ -44,7 +44,7 @@ canvas {
 }
 
 a, a:hover, a:visited, a:focus{
-    color:#8cbaed;
+    color:#ec008b;
 }
 
 a.btn:visited, a.btn:focus{
@@ -119,7 +119,7 @@ input.form-control {
 }
 
 .flat-slider.ui-slider-vertical .ui-slider-handle{
-    background: #8cbaed;
+    background: #ec008b;
 }
 
 .flat-slider.ui-slider-horizontal .ui-slider-handle {

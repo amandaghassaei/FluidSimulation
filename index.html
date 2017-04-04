@@ -311,7 +311,13 @@
         <div class="modal-content">
             <div class="modal-body">
                 <b>Fluid Simulation Shader</b><br/><br/>
-                I used the following sources to write this simulation:<br/><br/>
+                This simulation solves the <a href="https://en.wikipedia.org/wiki/Navier%E2%80%93Stokes_equations" target="_blank">Navier-Stokes equations</a> for incompressible fluids in a GPU fragment shader.
+                I implemented <a href="https://en.wikipedia.org/wiki/No-slip_condition" target="_blank">no-slip boundary conditions</a> at the borders to keep the fluid contained within the bounds of the screen.
+                To increase performance, I solved for the velocity vector field of the fluid at a lower resolution than I used to compute the visualization of fluid flow; I used bilinear interpolation to smooth out artifacts caused by this speedup.
+                <br/><br/>
+                <b>Instructions:</b> Click and drag to apply a force to the fluid.  Over time, the colored material in the fluid will dissipate.
+                <br/><br/>
+                I found the following sources helpful while writing this simulation:<br/>
                 <a href="https://pdfs.semanticscholar.org/84b8/c7b7eecf90ebd9d54a51544ca0f8ff93c137.pdf" target="_blank">Real-time ink simulation using a grid-particle method</a> - a method for real-time simulation of ink
                 in water using a coarse-grained fluid simulation with a particle simulation on top.<br/>
                 <a href="http://http.developer.nvidia.com/GPUGems/gpugems_ch38.html" target="_blank">Fast Fluid Dynamics Simulation on the GPU</a> - a very well written tutorial about programming the Navier-Stokes equations on a GPU.<br/>
