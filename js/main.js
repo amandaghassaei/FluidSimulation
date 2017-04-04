@@ -21,8 +21,8 @@ var GPU;
 
 var threeView;
 
-var numParticles = 40000;//perfect sq
-var particlesTextureDim = 200;//sqrt(numParticles)
+var numParticles = 160000;//perfect sq
+var particlesTextureDim = 400;//sqrt(numParticles)
 var particleData = new Float32Array(numParticles*4);//[position.x, position.y, velocity.x, velocity.y]
 var particles;
 var particlesVertices;
@@ -95,33 +95,39 @@ function init() {
     GPU.setUniformForProgram("moveParticles", "u_textureSize", [particlesTextureDim, particlesTextureDim], "2f");
     GPU.setUniformForProgram("moveParticles", "u_dt", 0.5, "1f");
 
-    resetWindow();
-
     threeView = initThreeView();
 
     var geo = new THREE.Geometry();
     geo.dynamic = true;
     particlesVertices = geo.vertices;
     for (var i=0;i<numParticles;i++){
+        geo.vertices.push(new THREE.Vector3());
+    }
+    particles = new THREE.Points(geo, new THREE.PointsMaterial({size:0.04, opacity: 0.5, transparent: false, depthTest : false, color:0x000033}));
+    threeView.scene.add(particles);
+
+    GPU.initTextureFromData("outputParticleBytes", particlesTextureDim*vectorLength, particlesTextureDim, "UNSIGNED_BYTE", null);//2 comp vector [x,y]
+    GPU.initFrameBufferForTexture("outputParticleBytes", true);
+
+    resetWindow();
+
+    render();
+}
+
+function setThree(){
+    for (var i=0;i<numParticles;i++){
         var vertex = new THREE.Vector3(Math.random()*actualWidth, Math.random()*actualHeight, 0);
         particleData[i*4] = vertex.x;
         particleData[i*4+1] = vertex.y;
-        geo.vertices.push(vertex);
+        particles.geometry.vertices[i].set(vertex.x, vertex.y, 0);
     }
-    particles = new THREE.Points(geo, new THREE.PointsMaterial({size:0.03, transparent: false, depthTest : false, color:0xff00ff}));
     particles.position.set(-actualWidth/2, -actualHeight/2, 0);
-    threeView.scene.add(particles);
     threeView.render();
 
     GPU.initTextureFromData("particles", particlesTextureDim, particlesTextureDim, "FLOAT", particleData, true);
     GPU.initFrameBufferForTexture("particles", true);
     GPU.initTextureFromData("nextParticles", particlesTextureDim, particlesTextureDim, "FLOAT", particleData, true);
     GPU.initFrameBufferForTexture("nextParticles", true);
-
-    GPU.initTextureFromData("outputParticleBytes", particlesTextureDim*vectorLength, particlesTextureDim, "UNSIGNED_BYTE", null);//2 comp vector [x,y]
-    GPU.initFrameBufferForTexture("outputParticleBytes", true);
-
-    render();
 }
 
 function render(){
@@ -185,26 +191,26 @@ function render(){
         GPU.setUniformForProgram("boundary", "u_scale", -1, "1f");
         GPU.step("boundary", ["nextVelocity"], "velocity");
 
-        // // move material
-        // GPU.setSize(actualWidth, actualHeight);
-        //
-        // //add material
-        // GPU.setProgram("addMaterial");
-        // if (!mouseout && mouseEnable){
-        //     GPU.setUniformForProgram("addMaterial", "u_mouseEnable", 1.0, "1f");
-        //     GPU.setUniformForProgram("addMaterial", "u_mouseCoord", mouseCoordinates, "2f");
-        //     GPU.setUniformForProgram("addMaterial", "u_mouseLength", Math.sqrt(Math.pow(3*(mouseCoordinates[0]-lastMouseCoordinates[0]),2)
-        //         +Math.pow(3*(mouseCoordinates[1]-lastMouseCoordinates[1]),2)), "1f");
-        // } else {
-        //     GPU.setUniformForProgram("addMaterial", "u_mouseEnable", 0.0, "1f");
-        // }
-        // GPU.step("addMaterial", ["material"], "nextMaterial");
-        //
-        // GPU.setProgram("advect");
-        // GPU.setUniformForProgram("advect" ,"u_textureSize", [actualWidth, actualHeight], "2f");
-        // GPU.setUniformForProgram("advect" ,"u_scale", scale, "1f");
-        // GPU.step("advect", ["velocity", "nextMaterial"], "material");
-        // GPU.step("render", ["material"]);
+        // move material
+        GPU.setSize(actualWidth, actualHeight);
+
+        //add material
+        GPU.setProgram("addMaterial");
+        if (!mouseout && mouseEnable){
+            GPU.setUniformForProgram("addMaterial", "u_mouseEnable", 1.0, "1f");
+            GPU.setUniformForProgram("addMaterial", "u_mouseCoord", mouseCoordinates, "2f");
+            GPU.setUniformForProgram("addMaterial", "u_mouseLength", Math.sqrt(Math.pow(3*(mouseCoordinates[0]-lastMouseCoordinates[0]),2)
+                +Math.pow(3*(mouseCoordinates[1]-lastMouseCoordinates[1]),2)), "1f");
+        } else {
+            GPU.setUniformForProgram("addMaterial", "u_mouseEnable", 0.0, "1f");
+        }
+        GPU.step("addMaterial", ["material"], "nextMaterial");
+
+        GPU.setProgram("advect");
+        GPU.setUniformForProgram("advect" ,"u_textureSize", [actualWidth, actualHeight], "2f");
+        GPU.setUniformForProgram("advect" ,"u_scale", scale, "1f");
+        GPU.step("advect", ["velocity", "nextMaterial"], "material");
+        GPU.step("render", ["material"]);
 
     } else resetWindow();
 
@@ -310,6 +316,8 @@ function resetWindow(){
     GPU.initFrameBufferForTexture("material", true);
     GPU.initTextureFromData("nextMaterial", actualWidth, actualHeight, "FLOAT", material, true);
     GPU.initFrameBufferForTexture("nextMaterial", true);
+
+    setThree();
 
     paused = false;
 }
