@@ -21,10 +21,12 @@ var GPU;
 
 var threeView;
 
-var numParticles = 100;//perfect sq
-var particlesTextureDim = 10;//sqrt(numParticles)
+var numParticles = 25;//perfect sq
+var particlesTextureDim = 5;//sqrt(numParticles)
 var particleData = new Float32Array(numParticles*4);//[position.x, position.y, velocity.x, velocity.y]
 var particles;
+var particlesVertices;
+var vectorLength = 2;//num floats to parse
 
 window.onload = init;
 
@@ -85,6 +87,13 @@ function init() {
     GPU.setUniformForProgram("boundary", "u_texture", 0, "1i");
 
     GPU.createProgram("packToBytes", "2d-vertex-shader", "packToBytesShader");
+    GPU.setUniformForProgram("packToBytes", "u_floatTextureDim", [particlesTextureDim, particlesTextureDim], "2f");
+
+    GPU.createProgram("moveParticles", "2d-vertex-shader", "moveParticlesShader");
+    GPU.setUniformForProgram("moveParticles", "u_particles", 0, "1i");
+    GPU.setUniformForProgram("moveParticles", "u_velocity", 1, "1i");
+    GPU.setUniformForProgram("moveParticles", "u_textureSize", [particlesTextureDim, particlesTextureDim], "2f");
+    GPU.setUniformForProgram("moveParticles", "u_dt", 0.5, "1f");
 
     resetWindow();
 
@@ -92,6 +101,7 @@ function init() {
 
     var geo = new THREE.Geometry();
     geo.dynamic = true;
+    particlesVertices = geo.vertices;
     for (var i=0;i<numParticles;i++){
         var vertex = new THREE.Vector3(Math.random()*actualWidth, Math.random()*actualHeight, 0);
         particleData[i*4] = vertex.x;
@@ -108,8 +118,8 @@ function init() {
     GPU.initTextureFromData("nextParticles", particlesTextureDim, particlesTextureDim, "FLOAT", particleData, true);
     GPU.initFrameBufferForTexture("nextParticles", true);
 
-    GPU.initTextureFromData("outputParticleBytes", particlesTextureDim*2, particlesTextureDim, "UNSIGNED_BYTE", null);//2 comp vector [x,y]
-    GPU.initFrameBufferForTexture("outputParticleBytes");
+    GPU.initTextureFromData("outputParticleBytes", particlesTextureDim*vectorLength, particlesTextureDim, "UNSIGNED_BYTE", null);//2 comp vector [x,y]
+    GPU.initFrameBufferForTexture("outputParticleBytes", true);
 
     render();
 }
@@ -199,16 +209,24 @@ function render(){
     } else resetWindow();
 
     //move particles
-    var vectorLength = 2;
+    GPU.setSize(particlesTextureDim, particlesTextureDim);
+    GPU.step("moveParticles", ["particles", "velocity"], "nextParticles");
+    GPU.step("moveParticles", ["nextParticles", "velocity"], "particles");
+
+    GPU.setSize(particlesTextureDim*vectorLength, particlesTextureDim);
     GPU.setProgram("packToBytes");
     GPU.setUniformForProgram("packToBytes", "u_vectorLength", vectorLength, "1f");
-    GPU.setSize(width, height);
     GPU.step("packToBytes", ["particles"], "outputParticleBytes");
-    var pixels = new Uint8Array(width*height*4*vectorLength);
+    var pixels = new Uint8Array(numParticles*4*vectorLength);
     if (GPU.readyToRead()) {
-        GPU.readPixels(0, 0, width * vectorLength, height, pixels);
+        GPU.readPixels(0, 0, particlesTextureDim * vectorLength, particlesTextureDim, pixels);
         var parsedPixels = new Float32Array(pixels.buffer);
-        // console.log(parsedPixels);
+        for (var i=0;i<numParticles;i++){
+            particlesVertices[i].x = parsedPixels[vectorLength*i];
+            particlesVertices[i].y = parsedPixels[vectorLength*i+1];
+        }
+        particles.geometry.verticesNeedUpdate = true;
+        threeView.render();
     }
 
     window.requestAnimationFrame(render);
@@ -256,6 +274,9 @@ function resetWindow(){
     GPU.setUniformForProgram("render" ,"u_textureSize", [actualWidth, actualHeight], "2f");
     GPU.setProgram("boundary");
     GPU.setUniformForProgram("boundary" ,"u_textureSize", [width, height], "2f");
+    GPU.setProgram("moveParticles");
+    GPU.setUniformForProgram("moveParticles", "u_velocityTextureSize", [width, height], "2f");
+    GPU.setUniformForProgram("moveParticles" ,"u_scale", scale, "1f");
 
     var velocity = new Float32Array(width*height*4);
     // for (var i=0;i<height;i++){

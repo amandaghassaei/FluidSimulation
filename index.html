@@ -296,11 +296,13 @@
     <script id="moveParticlesShader" type="x-shader/x-fragment">
         precision mediump float;
 
-        uniform sampler2D u_velocity;
         uniform sampler2D u_particles;
+        uniform sampler2D u_velocity;
 
         uniform vec2 u_textureSize;
         uniform vec2 u_velocityTextureSize;
+
+        uniform float u_dt;
 
         uniform float u_scale;
 
@@ -332,10 +334,10 @@
             vec2 fragCoord = gl_FragCoord.xy;
             vec2 particleCoord = texture2D(u_particles, fragCoord/u_textureSize).xy;
 
-            vec2 currentVelocity = 1.0/u_scale*bilinearInterp(vec2(1.0, 1.0) + particleCoord/u_velocityTextureSize*(u_velocityTextureSize-vec2(3.0, 3.0)), u_velocity, u_velocityTextureSize);
+            vec2 currentVelocity = 1.0/u_scale*bilinearInterp(vec2(1.0, 1.0) + particleCoord*u_scale/u_velocityTextureSize*(u_velocityTextureSize-vec2(3.0, 3.0)), u_velocity, u_velocityTextureSize);
 
             //explicitly solve advection
-            gl_FragColor = vec4(particlePos+currentVelocity*0.5, 0, 0);
+            gl_FragColor = vec4(particleCoord+currentVelocity*u_dt, 0, 0);
         }
     </script>
 
