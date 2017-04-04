@@ -100,7 +100,7 @@ function render(){
         var alpha = dx*dx/(nu*dt);
         GPU.setUniformForProgram("jacobi", "u_alpha", alpha, "1f");
         GPU.setUniformForProgram("jacobi", "u_reciprocalBeta", 1/(4+alpha), "1f");
-        for (var i=0;i<2;i++){
+        for (var i=0;i<1;i++){
             GPU.step("jacobi", ["velocity", "velocity"], "nextVelocity");
             GPU.step("jacobi", ["nextVelocity", "nextVelocity"], "velocity");
         }
@@ -171,7 +171,6 @@ function resetWindow(){
     height = Math.floor(actualHeight/_scale);
 
     scale = 1/_scale;
-    console.log(scale);
 
     canvas.width = actualWidth;
     canvas.height = actualHeight;
@@ -233,7 +232,7 @@ function resetWindow(){
 function onMouseMove(e){
     lastMouseCoordinates = mouseCoordinates;
     var x = e.clientX;
-    var padding = 100;
+    var padding = 10;
     if (x<padding) x = padding;
     if (x>actualWidth-padding) x = actualWidth-padding;
     var y = e.clientY;
