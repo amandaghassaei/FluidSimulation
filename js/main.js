@@ -100,9 +100,9 @@ function render(){
         var alpha = dx*dx/(nu*dt);
         GPU.setUniformForProgram("jacobi", "u_alpha", alpha, "1f");
         GPU.setUniformForProgram("jacobi", "u_reciprocalBeta", 1/(4+alpha), "1f");
-        for (var i=0;i<3;i++){
+        for (var i=0;i<2;i++){
             GPU.step("jacobi", ["velocity", "velocity"], "nextVelocity");
-            GPU.step("boundary", ["nextVelocity"], "velocity");
+            GPU.step("jacobi", ["nextVelocity", "nextVelocity"], "velocity");
         }
 
         //apply force
@@ -120,21 +120,22 @@ function render(){
         // GPU.swapTextures("velocity", "nextVelocity");
         GPU.step("boundary", ["nextVelocity"], "velocity");
 
-        GPU.setProgram("boundary");
-        GPU.setUniformForProgram("boundary", "u_scale", 1, "1f");
         // compute pressure
         GPU.step("diverge", ["velocity"], "velocityDivergence");//calc velocity divergence
         GPU.setProgram("jacobi");
         GPU.setUniformForProgram("jacobi", "u_alpha", -dx*dx, "1f");
         GPU.setUniformForProgram("jacobi", "u_reciprocalBeta", 1/4, "1f");
-        for (var i=0;i<30;i++){
+        for (var i=0;i<20;i++){
             GPU.step("jacobi", ["velocityDivergence", "pressure"], "nextPressure");
-            GPU.step("boundary", ["nextPressure"], "pressure");
+            GPU.step("jacobi", ["velocityDivergence", "nextPressure"], "pressure");
         }
+        GPU.setProgram("boundary");
+        GPU.setUniformForProgram("boundary", "u_scale", 1, "1f");
+        GPU.step("boundary", ["pressure"], "nextPressure");
+        GPU.swapTextures("pressure", "nextPressure");
 
         // subtract pressure gradient
         GPU.step("gradientSubtraction", ["velocity", "pressure"], "nextVelocity");
-        // GPU.swapTextures("velocity", "nextVelocity");
         GPU.setProgram("boundary");
         GPU.setUniformForProgram("boundary", "u_scale", -1, "1f");
         GPU.step("boundary", ["nextVelocity"], "velocity");
