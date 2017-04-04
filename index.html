@@ -53,7 +53,36 @@
 
         void main() {
             vec2 fragCoord = gl_FragCoord.xy;
-            gl_FragColor = vec4(texture2D(u_material, fragCoord/u_textureSize).x, 0, 1, 1);
+
+            vec3 background = vec3(0.96, 0.87, 0.68);
+            vec3 material1 = vec3(0.925, 0, 0.55);
+            vec3 material2 = vec3(0.0, 0.70, 0.63);
+            vec3 material3 = vec3(0.52, 0.81, 0.70);
+            vec3 material4 = vec3(1.0, 0.7, 0.07);
+
+            float val = texture2D(u_material, fragCoord/u_textureSize).x/2.0;
+            if (val > 1.0) val = 1.0;
+            if (val < 0.0) val = 0.0;
+
+            vec3 color = vec3(0.0);
+            if (val < 0.25) {
+                val *= 4.0;
+                color = background*(1.0-val) + material1*val;
+            } else if (val < 0.5) {
+                val -= 0.25;
+                val *= 4.0;
+                color = material1*(1.0-val) + material2*val;
+            } else if (val < 0.75) {
+                val -= 0.50;
+                val *= 4.0;
+                color = material2*(1.0-val) + material3*val;
+            } else {
+                val -= 0.75;
+                val *= 4.0;
+                color = material3*(1.0-val) + material4*val;
+            }
+
+            gl_FragColor = vec4(color, 1);
         }
     </script>
 
@@ -131,7 +160,8 @@
                 currentMaterial += u_mouseLength*0.1*exp(-(pxDist.x*pxDist.x+pxDist.y*pxDist.y)*u_reciprocalRadius);
             }
 
-            gl_FragColor = vec4(currentMaterial-0.002, 0, 0, 0);
+            if (currentMaterial > 0.0) currentMaterial -= 0.002;//material disappears over time
+            gl_FragColor = vec4(currentMaterial, 0, 0, 0);
         }
     </script>
 
