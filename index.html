@@ -272,7 +272,7 @@
             else {
                 vec2 scaledCoord = (fragCoord-pxCenter)*u_scale;
                 vec2 scaledSize = u_textureSize*u_scale;
-                currentVelocity = 1.0/u_scale*bilinearInterp(vec2(1.0, 1.0) + scaledCoord/scaledSize*(scaledSize-vec2(3.0, 3.0)), u_velocity, scaledSize);
+                currentVelocity = 1.0/u_scale*bilinearInterp(vec2(1.0, 1.0) + scaledCoord/scaledSize*(scaledSize-vec2(0.5, 0.5)/u_scale), u_velocity, scaledSize);
             }
 
             //implicitly solve advection
@@ -335,7 +335,7 @@
             vec2 fragCoord = gl_FragCoord.xy;
             vec2 particleCoord = texture2D(u_particles, fragCoord/u_textureSize).xy;
 
-            vec2 currentVelocity = 1.0/u_scale*bilinearInterp(vec2(1.0, 1.0) + particleCoord*u_scale/u_velocityTextureSize*(u_velocityTextureSize-vec2(3.0, 3.0)), u_velocity, u_velocityTextureSize);
+            vec2 currentVelocity = 1.0/u_scale*bilinearInterp(vec2(1.0, 1.0) + particleCoord*u_scale/u_velocityTextureSize*(u_velocityTextureSize-vec2(0.5, 0.5)/u_scale), u_velocity, u_velocityTextureSize);
             vec2 nextPosition = particleCoord+currentVelocity*u_dt;//explicitly solve advection
 
             if (nextPosition.x < 0.0) nextPosition.x = 0.0;
