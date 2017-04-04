@@ -300,6 +300,7 @@
         uniform sampler2D u_velocity;
 
         uniform vec2 u_textureSize;
+        uniform vec2 u_screenSize;
         uniform vec2 u_velocityTextureSize;
 
         uniform float u_dt;
@@ -335,9 +336,14 @@
             vec2 particleCoord = texture2D(u_particles, fragCoord/u_textureSize).xy;
 
             vec2 currentVelocity = 1.0/u_scale*bilinearInterp(vec2(1.0, 1.0) + particleCoord*u_scale/u_velocityTextureSize*(u_velocityTextureSize-vec2(3.0, 3.0)), u_velocity, u_velocityTextureSize);
+            vec2 nextPosition = particleCoord+currentVelocity*u_dt;//explicitly solve advection
 
-            //explicitly solve advection
-            gl_FragColor = vec4(particleCoord+currentVelocity*u_dt, 0, 0);
+            if (nextPosition.x < 0.0) nextPosition.x = 0.0;
+            else if (nextPosition.x >= u_screenSize.x-3.0) nextPosition.x = u_screenSize.x-3.0;
+            if (nextPosition.y < 0.0) nextPosition.y = 0.0;
+            else if (nextPosition.y >= u_screenSize.y-3.0) nextPosition.y = u_screenSize.y-3.0;
+
+            gl_FragColor = vec4(nextPosition, 0, 0);
         }
     </script>
 

@@ -176,7 +176,7 @@ function render(){
         GPU.setProgram("jacobi");
         GPU.setUniformForProgram("jacobi", "u_alpha", -dx*dx, "1f");
         GPU.setUniformForProgram("jacobi", "u_reciprocalBeta", 1/4, "1f");
-        for (var i=0;i<20;i++){
+        for (var i=0;i<10;i++){
             GPU.step("jacobi", ["velocityDivergence", "pressure"], "nextPressure");
             GPU.step("jacobi", ["velocityDivergence", "nextPressure"], "pressure");
         }
@@ -245,8 +245,8 @@ function onResize(){
 
 function resetWindow(){
 
-    actualWidth = body.clientWidth;
-    actualHeight = body.clientHeight;
+    actualWidth = Math.round(body.clientWidth);
+    actualHeight = Math.round(body.clientHeight);
 
     var maxDim = Math.max(actualHeight, actualWidth);
     var _scale = Math.ceil(maxDim/150);
@@ -282,6 +282,7 @@ function resetWindow(){
     GPU.setUniformForProgram("boundary" ,"u_textureSize", [width, height], "2f");
     GPU.setProgram("moveParticles");
     GPU.setUniformForProgram("moveParticles", "u_velocityTextureSize", [width, height], "2f");
+    GPU.setUniformForProgram("moveParticles", "u_screenSize", [actualWidth, actualHeight], "2f");
     GPU.setUniformForProgram("moveParticles" ,"u_scale", scale, "1f");
 
     var velocity = new Float32Array(width*height*4);
