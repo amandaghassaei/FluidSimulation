@@ -33,7 +33,7 @@ function initGL() {
     canvas.onmousemove = onMouseMove;
     canvas.onmousedown = onMouseDown;
     canvas.onmouseup = onMouseUp;
-    canvas.onmouseout = onMouseUp;
+    // canvas.onmouseout = onMouseUp;
 
     window.onresize = onResize;
 
@@ -107,8 +107,8 @@ function render(){
         if (mouseEnable){
             GPU.setUniformForProgram("force", "u_mouseEnable", 1.0, "1f");
             GPU.setUniformForProgram("force", "u_mouseCoord", [mouseCoordinates[0]*scale, mouseCoordinates[1]*scale], "2f");
-            GPU.setUniformForProgram("force", "u_mouseDir", [2*(mouseCoordinates[0]-lastMouseCoordinates[0])*scale,
-                2*(mouseCoordinates[1]-lastMouseCoordinates[1])*scale], "2f");
+            GPU.setUniformForProgram("force", "u_mouseDir", [3*(mouseCoordinates[0]-lastMouseCoordinates[0])*scale,
+                3*(mouseCoordinates[1]-lastMouseCoordinates[1])*scale], "2f");
         } else {
             GPU.setUniformForProgram("force", "u_mouseEnable", 0.0, "1f");
         }
@@ -162,13 +162,13 @@ function resetWindow(){
     actualHeight = body.clientHeight;
 
     var maxDim = Math.max(actualHeight, actualWidth);
-    var _scale = maxDim/150;
+    var _scale = Math.ceil(maxDim/150);
     if (_scale < 1) _scale = 1;
 
     width = Math.floor(actualWidth/_scale);
     height = Math.floor(actualHeight/_scale);
 
-    scale = (width/actualWidth + height/actualHeight)/2;
+    scale = 1/_scale;
     console.log(scale);
 
     canvas.width = actualWidth;
@@ -230,7 +230,14 @@ function resetWindow(){
 
 function onMouseMove(e){
     lastMouseCoordinates = mouseCoordinates;
-    mouseCoordinates = [e.clientX, actualHeight-e.clientY];
+    var x = e.clientX;
+    var padding = 100;
+    if (x<padding) x = padding;
+    if (x>actualWidth-padding) x = actualWidth-padding;
+    var y = e.clientY;
+    if (y<padding) y = padding;
+    if (y>actualHeight-padding) y = actualHeight-padding;
+    mouseCoordinates = [x, actualHeight-y];
 }
 
 function onMouseDown(){

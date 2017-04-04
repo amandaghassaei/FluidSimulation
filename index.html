@@ -209,7 +209,9 @@
 
             vec2 currentVelocity;
             if (u_scale == 1.0) currentVelocity = 1.0/u_scale*texture2D(u_velocity, fragCoord/u_textureSize).xy;
-            else currentVelocity = 1.0/u_scale*bilinearInterp((fragCoord-pxCenter)*u_scale, u_velocity, u_textureSize*u_scale);
+            else {
+                currentVelocity = 1.0/u_scale*bilinearInterp((fragCoord-pxCenter)*u_scale, u_velocity, u_textureSize*u_scale);
+            }
 
             //implicitly solve advection
 
