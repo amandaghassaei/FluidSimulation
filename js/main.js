@@ -19,6 +19,8 @@ var rho = 1;//density
 
 var GPU;
 
+var threeView;
+
 window.onload = initGL;
 
 function initGL() {
@@ -42,6 +44,13 @@ function initGL() {
     };
 
     window.onresize = onResize;
+
+    threeView = initThreeView();
+    var mesh = new THREE.Mesh(new THREE.BoxGeometry(10, 10, 10), new THREE.MeshBasicMaterial());
+    threeView.scene.add(mesh);
+    threeView.render();
+
+
 
     GPU = initGPUMath();
 
