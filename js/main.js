@@ -21,7 +21,8 @@ var GPU;
 
 var threeView;
 
-var numParticles = 100;
+var numParticles = 100;//perfect sq
+var particlesTextureDim = 10;//sqrt(numParticles)
 var particleData = new Float32Array(numParticles*4);//[position.x, position.y, velocity.x, velocity.y]
 var particles;
 
@@ -48,18 +49,6 @@ function init() {
     };
 
     window.onresize = onResize;
-
-    threeView = initThreeView();
-
-    var geo = new THREE.Geometry();
-    geo.dynamic = true;
-    for (var i=0;i<numParticles;i++){
-        geo.vertices.push(new THREE.Vector3(Math.random()*200, Math.random()*200, 0));
-    }
-    particles = new THREE.Points(geo, new THREE.PointsMaterial({size:0.1, transparent: false, depthTest : false, color:0xff00ff}));
-    threeView.scene.add(particles);
-    threeView.render();
-
 
     GPU = initGPUMath();
 
@@ -95,7 +84,32 @@ function init() {
     GPU.createProgram("boundary", "2d-vertex-shader", "boundaryShader");
     GPU.setUniformForProgram("boundary", "u_texture", 0, "1i");
 
+    GPU.createProgram("packToBytes", "2d-vertex-shader", "packToBytesShader");
+
     resetWindow();
+
+    threeView = initThreeView();
+
+    var geo = new THREE.Geometry();
+    geo.dynamic = true;
+    for (var i=0;i<numParticles;i++){
+        var vertex = new THREE.Vector3(Math.random()*actualWidth, Math.random()*actualHeight, 0);
+        particleData[i*4] = vertex.x;
+        particleData[i*4+1] = vertex.y;
+        geo.vertices.push(vertex);
+    }
+    particles = new THREE.Points(geo, new THREE.PointsMaterial({size:0.1, transparent: false, depthTest : false, color:0xff00ff}));
+    particles.position.set(-actualWidth/2, -actualHeight/2, 0);
+    threeView.scene.add(particles);
+    threeView.render();
+
+    GPU.initTextureFromData("particles", particlesTextureDim, particlesTextureDim, "FLOAT", particleData, true);
+    GPU.initFrameBufferForTexture("particles", true);
+    GPU.initTextureFromData("nextParticles", particlesTextureDim, particlesTextureDim, "FLOAT", particleData, true);
+    GPU.initFrameBufferForTexture("nextParticles", true);
+
+    GPU.initTextureFromData("outputParticleBytes", particlesTextureDim*2, particlesTextureDim, "UNSIGNED_BYTE", null);//2 comp vector [x,y]
+    GPU.initFrameBufferForTexture("outputParticleBytes");
 
     render();
 }
@@ -183,6 +197,19 @@ function render(){
         GPU.step("render", ["material"]);
 
     } else resetWindow();
+
+    //move particles
+    var vectorLength = 2;
+    GPU.setProgram("packToBytes");
+    GPU.setUniformForProgram("packToBytes", "u_vectorLength", vectorLength, "1f");
+    GPU.setSize(width, height);
+    GPU.step("packToBytes", ["particles"], "outputParticleBytes");
+    var pixels = new Uint8Array(width*height*4*vectorLength);
+    if (GPU.readyToRead()) {
+        GPU.readPixels(0, 0, width * vectorLength, height, pixels);
+        var parsedPixels = new Float32Array(pixels.buffer);
+        // console.log(parsedPixels);
+    }
 
     window.requestAnimationFrame(render);
 }
