@@ -84,9 +84,10 @@ function render(){
         GPU.setUniformForProgram("advect" ,"u_scale", 1, "1f");
         GPU.step("advect", ["velocity", "velocity"], "nextVelocity");
 
-        // GPU.setProgram("boundary");
-        // GPU.setUniformForProgram("boundary", "u_scale", -1, "1f");
-        // GPU.stepBoundary("boundary", ["nextVelocity"], "velocity");
+        GPU.setProgram("boundary");
+        GPU.setUniformForProgram("boundary", "u_scale", -1, "1f");
+        GPU.step("boundary", ["nextVelocity"], "velocity");
+        // GPU.swapTextures("velocity", "nextVelocity");
 
         //diffuse velocity
         GPU.setProgram("jacobi");
@@ -97,6 +98,9 @@ function render(){
             GPU.step("jacobi", ["velocity", "velocity"], "nextVelocity");
             GPU.step("jacobi", ["nextVelocity", "nextVelocity"], "velocity");
         }
+
+        GPU.step("boundary", ["velocity"], "nextVelocity");
+        GPU.swapTextures("velocity", "nextVelocity");
 
         //apply force
         GPU.setProgram("force");
@@ -109,7 +113,9 @@ function render(){
             GPU.setUniformForProgram("force", "u_mouseEnable", 0.0, "1f");
         }
         GPU.step("force", ["velocity"], "nextVelocity");
-        GPU.swapTextures("velocity", "nextVelocity");
+
+        // GPU.swapTextures("velocity", "nextVelocity");
+        GPU.step("boundary", ["nextVelocity"], "velocity");
 
         // compute pressure
         GPU.step("diverge", ["velocity"], "velocityDivergence");//calc velocity divergence
@@ -121,9 +127,16 @@ function render(){
             GPU.step("jacobi", ["velocityDivergence", "nextPressure"], "pressure");//diffuse velocity
         }
 
+        GPU.setProgram("boundary");
+        GPU.setUniformForProgram("boundary", "u_scale", 1, "1f");
+        GPU.step("boundary", ["pressure"], "nextPressure");
+
         // subtract pressure gradient
-        GPU.step("gradientSubtraction", ["velocity", "pressure"], "nextVelocity");
-        GPU.swapTextures("velocity", "nextVelocity");
+        GPU.step("gradientSubtraction", ["velocity", "nextPressure"], "nextVelocity");
+        // GPU.swapTextures("velocity", "nextVelocity");
+        GPU.setProgram("boundary");
+        GPU.setUniformForProgram("boundary", "u_scale", -1, "1f");
+        GPU.step("boundary", ["nextVelocity"], "velocity");
 
         // move material
         GPU.setSize(actualWidth, actualHeight);
@@ -150,11 +163,13 @@ function resetWindow(){
 
     var maxDim = Math.max(actualHeight, actualWidth);
     var _scale = maxDim/150;
+    if (_scale < 1) _scale = 1;
 
     width = Math.floor(actualWidth/_scale);
     height = Math.floor(actualHeight/_scale);
 
     scale = (width/actualWidth + height/actualHeight)/2;
+    console.log(scale);
 
     canvas.width = actualWidth;
     canvas.height = actualHeight;
@@ -168,7 +183,7 @@ function resetWindow(){
     GPU.setProgram("diverge");
     GPU.setUniformForProgram("diverge" ,"u_textureSize", [width, height], "2f");
     GPU.setProgram("force");
-    GPU.setUniformForProgram("force", "u_reciprocalRadius", 0.1/scale, "1f");
+    GPU.setUniformForProgram("force", "u_reciprocalRadius", 0.03/scale, "1f");
     GPU.setUniformForProgram("force" ,"u_textureSize", [width, height], "2f");
     GPU.setProgram("jacobi");
     GPU.setUniformForProgram("jacobi" ,"u_textureSize", [width, height], "2f");

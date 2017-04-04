@@ -122,8 +122,8 @@ function initBoilerPlate(){
 
     function loadVertexData(gl, program) {
         gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
-        var val = 0.9;
-        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([ -val,-val, val,-val, -val, val, val, val, val, val, val, -val, -val, val, -val, -val]), gl.STATIC_DRAW);
+        var val = 1.0;
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([ -val,-val, val,-val, -val, val, val, val]), gl.STATIC_DRAW);
 
         // look up where the vertex data needs to go.
         var positionLocation = gl.getAttribLocation(program, "a_position");

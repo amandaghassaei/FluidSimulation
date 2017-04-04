@@ -27,11 +27,17 @@
         void main() {
             vec2 fragCoord = gl_FragCoord.xy;
 
-            vec4 neighborVal;
             if (fragCoord.x < 1.0){
-                neighborVal = texture2D(u_texture, (fragCoord + vec2(1.0, 0.0))/u_textureSize);
-
-                gl_FragColor = u_scale*neighborVal;
+                gl_FragColor = u_scale*texture2D(u_texture, (fragCoord + vec2(1.0, 0.0))/u_textureSize);
+                return;
+            } else if (fragCoord.x >= u_textureSize.x-1.0){
+                gl_FragColor = u_scale*texture2D(u_texture, (fragCoord + vec2(-1.0, 0.0))/u_textureSize);
+                return;
+            } else if (fragCoord.y < 1.0){
+                gl_FragColor = u_scale*texture2D(u_texture, (fragCoord + vec2(0.0, 1.0))/u_textureSize);
+                return;
+            } else if (fragCoord.y >= u_textureSize.y-1.0){
+                gl_FragColor = u_scale*texture2D(u_texture, (fragCoord + vec2(0.0, -1.0))/u_textureSize);
                 return;
             }
 
@@ -216,7 +222,7 @@
 
             vec2 materialVal;
             //empty boundary
-            if (pos.x < 0.0 || pos.x >= u_textureSize.x-1.0 || pos.y < 0.0 || pos.y >= u_textureSize.y-1.0) materialVal = vec2(0.0);
+            if (pos.x < 0.0 || pos.x >= u_textureSize.x || pos.y < 0.0 || pos.y >= u_textureSize.y) materialVal = vec2(0.0);
             else materialVal = bilinearInterp(pos, u_material, u_textureSize);
 
             gl_FragColor = vec4(materialVal, 0, 0);
