@@ -64,6 +64,9 @@ function initGL() {
     GPU.setUniformForProgram("force", "u_dt", dt, "1f");
     GPU.setUniformForProgram("force", "u_velocity", 0, "1i");
 
+    GPU.createProgram("addMaterial", "2d-vertex-shader", "addMaterialShader");
+    GPU.setUniformForProgram("force", "u_material", 0, "1i");
+
     GPU.createProgram("jacobi", "2d-vertex-shader", "jacobiShader");
     GPU.setUniformForProgram("jacobi", "u_b", 0, "1i");
     GPU.setUniformForProgram("jacobi", "u_x", 1, "1i");
@@ -142,12 +145,24 @@ function render(){
 
         // move material
         GPU.setSize(actualWidth, actualHeight);
+
+        //add material
+        GPU.setProgram("addMaterial");
+        if (!mouseout && mouseEnable){
+            GPU.setUniformForProgram("addMaterial", "u_mouseEnable", 1.0, "1f");
+            GPU.setUniformForProgram("addMaterial", "u_mouseCoord", mouseCoordinates, "2f");
+            GPU.setUniformForProgram("addMaterial", "u_mouseLength", Math.sqrt(Math.pow(3*(mouseCoordinates[0]-lastMouseCoordinates[0]),2)
+                +Math.pow(3*(mouseCoordinates[1]-lastMouseCoordinates[1]),2)), "1f");
+        } else {
+            GPU.setUniformForProgram("addMaterial", "u_mouseEnable", 0.0, "1f");
+        }
+        GPU.step("addMaterial", ["material"], "nextMaterial");
+
         GPU.setProgram("advect");
         GPU.setUniformForProgram("advect" ,"u_textureSize", [actualWidth, actualHeight], "2f");
         GPU.setUniformForProgram("advect" ,"u_scale", scale, "1f");
-        GPU.step("advect", ["velocity", "material"], "nextMaterial");
-        GPU.step("render", ["nextMaterial"]);
-        GPU.swapTextures("nextMaterial", "material");
+        GPU.step("advect", ["velocity", "nextMaterial"], "material");
+        GPU.step("render", ["material"]);
 
     } else resetWindow();
 
@@ -186,6 +201,9 @@ function resetWindow(){
     GPU.setProgram("force");
     GPU.setUniformForProgram("force", "u_reciprocalRadius", 0.03/scale, "1f");
     GPU.setUniformForProgram("force" ,"u_textureSize", [width, height], "2f");
+    GPU.setProgram("addMaterial");
+    GPU.setUniformForProgram("addMaterial", "u_reciprocalRadius", 0.03, "1f");
+    GPU.setUniformForProgram("addMaterial" ,"u_textureSize", [actualWidth, actualHeight], "2f");
     GPU.setProgram("jacobi");
     GPU.setUniformForProgram("jacobi" ,"u_textureSize", [width, height], "2f");
     GPU.setProgram("render");
@@ -214,13 +232,13 @@ function resetWindow(){
     GPU.initFrameBufferForTexture("nextPressure", true);
 
     var material = new Float32Array(actualWidth*actualHeight*4);
-    for (var i=0;i<actualHeight;i++){
-        for (var j=0;j<actualWidth;j++){
-            var index = 4*(i*actualWidth+j);
-            if (((Math.floor(i/50))%2 && (Math.floor(j/50))%2)
-                || ((Math.floor(i/50))%2 == 0 && (Math.floor(j/50))%2 == 0)) material[index] = 1.0;
-        }
-    }
+    // for (var i=0;i<actualHeight;i++){
+    //     for (var j=0;j<actualWidth;j++){
+    //         var index = 4*(i*actualWidth+j);
+    //         if (((Math.floor(i/50))%2 && (Math.floor(j/50))%2)
+    //             || ((Math.floor(i/50))%2 == 0 && (Math.floor(j/50))%2 == 0)) material[index] = 1.0;
+    //     }
+    // }
     GPU.initTextureFromData("material", actualWidth, actualHeight, "FLOAT", material, true);
     GPU.initFrameBufferForTexture("material", true);
     GPU.initTextureFromData("nextMaterial", actualWidth, actualHeight, "FLOAT", material, true);
