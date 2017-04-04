@@ -21,9 +21,13 @@ var GPU;
 
 var threeView;
 
-window.onload = initGL;
+var numParticles = 100;
+var particleData = new Float32Array(numParticles*4);//[position.x, position.y, velocity.x, velocity.y]
+var particles;
 
-function initGL() {
+window.onload = init;
+
+function init() {
 
     $("#about").click(function(e){
         e.preventDefault();
@@ -33,7 +37,7 @@ function initGL() {
     canvas = document.getElementById("glcanvas");
     body = document.getElementsByTagName("body")[0];
 
-    canvas.onmousemove = onMouseMove;
+    window.onmousemove = onMouseMove;
     window.onmousedown = onMouseDown;
     window.onmouseup = onMouseUp;
     canvas.onmouseout = function (){
@@ -46,10 +50,15 @@ function initGL() {
     window.onresize = onResize;
 
     threeView = initThreeView();
-    var mesh = new THREE.Mesh(new THREE.BoxGeometry(10, 10, 10), new THREE.MeshBasicMaterial());
-    threeView.scene.add(mesh);
-    threeView.render();
 
+    var geo = new THREE.Geometry();
+    geo.dynamic = true;
+    for (var i=0;i<numParticles;i++){
+        geo.vertices.push(new THREE.Vector3(Math.random()*200, Math.random()*200, 0));
+    }
+    particles = new THREE.Points(geo, new THREE.PointsMaterial({size:0.1, transparent: false, depthTest : false, color:0xff00ff}));
+    threeView.scene.add(particles);
+    threeView.render();
 
 
     GPU = initGPUMath();
@@ -180,6 +189,7 @@ function render(){
 
 function onResize(){
     paused = true;
+    threeView.onWindowResize();
 }
 
 function resetWindow(){
