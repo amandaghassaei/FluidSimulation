@@ -1,5 +1,5 @@
 # FluidSimulation
-WebGL shader for mixed Eulerian and Lagrangian fluid simulation
+WebGL shader for mixed grid-particle fluid simulation
 
 Live demo at <a href="http://git.amandaghassaei.com/FluidSimulation/" target="_blank">git.amandaghassaei.com/FluidSimulation/</a>
 
