@@ -215,6 +215,9 @@ function render(){
     } else resetWindow();
 
     //move particles
+    //http://voxelent.com/html/beginners-guide/chapter_10/ch10_PointSprites.html
+    // gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.DYNAMIC_DRAW);
+    //http://stackoverflow.com/questions/5497722/how-can-i-animate-an-object-in-webgl-modify-specific-vertices-not-full-transfor
     GPU.setSize(particlesTextureDim, particlesTextureDim);
     GPU.step("moveParticles", ["particles", "velocity"], "nextParticles");
     GPU.step("moveParticles", ["nextParticles", "velocity"], "particles");
