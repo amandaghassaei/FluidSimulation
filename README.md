@@ -3,7 +3,7 @@ WebGL shader for mixed grid-particle fluid simulation
 
 Live demo at <a href="http://git.amandaghassaei.com/FluidSimulation/" target="_blank">git.amandaghassaei.com/FluidSimulation/</a>
 
-<img style="width:100%" src="img.png"/>
+<img style="width:100%" src="img.jpg"/>
 
 This simulation solves the <a href="https://en.wikipedia.org/wiki/Navier%E2%80%93Stokes_equations" target="_blank">Navier-Stokes equations</a> for incompressible fluids in a GPU fragment shader.
 I implemented <a href="https://en.wikipedia.org/wiki/No-slip_condition" target="_blank">no-slip boundary conditions</a> at the borders to keep the fluid contained within the bounds of the screen.
