@@ -97,12 +97,10 @@ function init() {
 
     threeView = initThreeView();
 
-    var geo = new THREE.Geometry();
+    var geo = new THREE.BufferGeometry();
     geo.dynamic = true;
-    particlesVertices = geo.vertices;
-    for (var i=0;i<numParticles;i++){
-        geo.vertices.push(new THREE.Vector3());
-    }
+    particlesVertices = new Float32Array(numParticles*3);
+    geo.addAttribute('position', new THREE.BufferAttribute(particlesVertices, 3));
     particles = new THREE.Points(geo, new THREE.PointsMaterial({size:0.04, opacity: 0.5, transparent: false, depthTest : false, color:0x000033}));
     threeView.scene.add(particles);
 
@@ -119,7 +117,8 @@ function setThree(){
         var vertex = new THREE.Vector3(Math.random()*actualWidth, Math.random()*actualHeight, 0);
         particleData[i*4] = vertex.x;
         particleData[i*4+1] = vertex.y;
-        particles.geometry.vertices[i].set(vertex.x, vertex.y, 0);
+        particlesVertices[3*i] = vertex.x;
+        particlesVertices[3*i+1] = vertex.y;
     }
     particles.position.set(-actualWidth/2, -actualHeight/2, 0);
     threeView.render();
@@ -231,10 +230,10 @@ function render(){
         GPU.readPixels(0, 0, particlesTextureDim * vectorLength, particlesTextureDim, pixels);
         var parsedPixels = new Float32Array(pixels.buffer);
         for (var i=0;i<numParticles;i++){
-            particlesVertices[i].x = parsedPixels[vectorLength*i];
-            particlesVertices[i].y = parsedPixels[vectorLength*i+1];
+            particlesVertices[3*i] = parsedPixels[vectorLength*i];
+            particlesVertices[3*i+1] = parsedPixels[vectorLength*i+1];
         }
-        particles.geometry.verticesNeedUpdate = true;
+        particles.geometry.attributes.position.needsUpdate = true;
         threeView.render();
     }
 
