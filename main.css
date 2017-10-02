@@ -236,3 +236,7 @@ span.modal-close{
     width: 100%;
     height: 100%;
 }
+
+#noSupportModal{
+    text-align: center;
+}
