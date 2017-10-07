@@ -1,7 +1,7 @@
 # FluidSimulation
 WebGL shader for mixed grid-particle fluid simulation
 
-Live demo at <a href="http://git.amandaghassaei.com/FluidSimulation/" target="_blank">git.amandaghassaei.com/FluidSimulation/</a>
+Live demo at <a href="http://apps.amandaghassaei.com/FluidSimulation/" target="_blank">apps.amandaghassaei.com/FluidSimulation/</a>
 
 <img style="width:100%" src="img.jpg"/>
 
