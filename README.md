@@ -12,7 +12,7 @@ I've also added 160,000 <a href="https://en.wikipedia.org/wiki/Lagrangian_partic
 these particles are rendered using <a href="https://threejs.org/" target="_blank">threejs</a>, but their positions are computed on the GPU.
 <br/><br/>
 <b>Instructions:</b> Click and drag to apply a force to the fluid.  Over time, the colored material in the fluid will dissipate:
-<img style="width:100%" src="img2.png"/>
+<img style="width:100%" src="img2.jpg"/>
 <br/><br/>
 To learn more about the math involved, check out the following sources:<br/>
 <a href="https://pdfs.semanticscholar.org/84b8/c7b7eecf90ebd9d54a51544ca0f8ff93c137.pdf" target="_blank">Real-time ink simulation using a grid-particle method</a> - mixing Eulerian and Lagrangian techniques for fluids<br/>
