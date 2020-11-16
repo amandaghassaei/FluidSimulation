@@ -1,0 +1,80 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>Mass-Spring-Damper Shader</title>
+	<link rel="stylesheet" type="text/css" href="main.css">
+	<link rel="stylesheet" type="text/css" href="micromodal.css">
+	<script>
+		(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+		(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+		m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+		})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+		ga('create', 'UA-86531114-7', 'auto');
+		ga('send', 'pageview');
+	</script>
+  </head>
+  <body>
+	<canvas id="glcanvas"></canvas>
+	<img id="coverImg"/>
+	<div class="modal micromodal-slide" id="modal-1" aria-hidden="true">
+		<div class="modal__overlay" tabindex="-1" data-micromodal-close>
+			<div class="modal__container" role="dialog" aria-modal="true" aria-labelledby="modal-1-title">
+			<header class="modal__header">
+				<h2 class="modal__title">
+					Fluid Simulation Shader
+				</h2>
+				<button class="modal__close" aria-label="Close modal" data-micromodal-close></button>
+			</header>
+			<main class="modal__content">
+				<p>
+					This simulation solves the <a href="https://en.wikipedia.org/wiki/Navier%E2%80%93Stokes_equations" target="_blank">Navier-Stokes equations</a> for incompressible fluids in a GPU fragment shader.
+					To increase performance, the velocity vector field of the fluid is solved at a lower resolution and linearly interpolated to generate the visualization of flow.
+					I've also added 130,000 <a href="https://en.wikipedia.org/wiki/Lagrangian_particle_tracking" target="_blank">Lagrangian particles</a> on top of the simulation -
+					these particles' positions are all computed in the gpu as well.
+				</p>
+				<p>
+					<b>Instructions:</b> Click and drag to apply a force to the fluid.  Over time, the colored material in the fluid will dissipate:
+				</p>
+				<img style="width:100%" src="img2.jpg"/>
+				<p>
+					To learn more about the math involved, check out the following sources:
+				</p>
+				</p>
+					<a href="https://pdfs.semanticscholar.org/84b8/c7b7eecf90ebd9d54a51544ca0f8ff93c137.pdf" target="_blank">Real-time ink simulation using a grid-particle method</a> - mixing Eulerian and Lagrangian techniques for fluids.<br/>
+					<a href="http://developer.download.nvidia.com/books/HTML/gpugems/gpugems_ch38.html" target="_blank">Fast Fluid Dynamics Simulation on the GPU</a> - a very well written tutorial about programming the Navier-Stokes equations on a GPU.
+					Though not WebGL specific, it was still very useful.<br/>
+					<a href="http://jamie-wong.com/2016/08/05/webgl-fluid-simulation/" target="_blank">Fluid Simulation (with WebGL demo)</a> - this article has some nice, interactive graphics that helped me debug my code.<br/>
+					<a href="http://www.dgp.toronto.edu/people/stam/reality/Research/pdf/ns.pdf" target="_blank">Stable Fluids</a> - a paper about stable numerical methods for evaluating Navier-Stokes on a discrete grid.
+				</p>
+				<p>
+					By <a href="http://www.amandaghassaei.com/" target="_blank">Amanda Ghassaei</a>, code on <a href="https://github.com/amandaghassaei/FluidSimulation" target="_blank">Github</a>.
+				</p>
+			</main>
+			</div>
+		</div>
+	</div>
+	<div class="modal micromodal-slide" id="modal-2" aria-hidden="true">
+		<div class="modal__overlay" tabindex="-1" data-micromodal-close>
+			<div class="modal__container" role="dialog" aria-modal="true" aria-labelledby="modal-1-title">
+			<header class="modal__header">
+				<h2 class="modal__title">
+					Unsupported Device
+				</h2>
+				<button class="modal__close" aria-label="Close modal" data-micromodal-close></button>
+			</header>
+			<main class="modal__content">
+				<p>
+					This device/browser does not support some GPU functions required by this app.
+					Please try again on desktop running Chrome/Firefox.
+				</p>
+				<p id='glErrorMsg'></p>
+			</main>
+			</div>
+		</div>
+	</div>
+	<a href="#" data-micromodal-trigger="modal-1" id="about">?</a>
+	<script src="main.js"></script>
+  </body>
+</html>

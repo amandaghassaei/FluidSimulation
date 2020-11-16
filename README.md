@@ -1,25 +1,28 @@
 # FluidSimulation
 WebGL shader for mixed grid-particle fluid simulation
 
-Live demo at <a href="http://apps.amandaghassaei.com/FluidSimulation/" target="_blank">apps.amandaghassaei.com/FluidSimulation/</a>
+Live demo at [apps.amandaghassaei.com/FluidSimulation](http://apps.amandaghassaei.com/FluidSimulation/).
 
-<img style="width:100%" src="img.jpg"/>
+<img style="width:100%" src="dist/img.jpg"/>
 
-This simulation solves the <a href="https://en.wikipedia.org/wiki/Navier%E2%80%93Stokes_equations" target="_blank">Navier-Stokes equations</a> for incompressible fluids in a GPU fragment shader.
-I implemented <a href="https://en.wikipedia.org/wiki/No-slip_condition" target="_blank">no-slip boundary conditions</a> at the borders to keep the fluid contained within the bounds of the screen.
-To increase performance, I solved for the velocity vector field of the fluid at a lower resolution than I used to compute the visualization of fluid flow; I used bilinear interpolation to smooth out artifacts caused by this speedup.
-I've also added 160,000 <a href="https://en.wikipedia.org/wiki/Lagrangian_particle_tracking" target="_blank">Lagrangian particles</a> on top of the simulation -
-these particles are rendered using <a href="https://threejs.org/" target="_blank">threejs</a>, but their positions are computed on the GPU.
-<br/><br/>
-<b>Instructions:</b> Click and drag to apply a force to the fluid.  Over time, the colored material in the fluid will dissipate:
+This simulation solves the [Navier-Stokes equations](https://en.wikipedia.org/wiki/Navier%E2%80%93Stokes_equations) for incompressible fluids in a GPU fragment shader.
+To increase performance, the velocity vector field of the fluid is solved at a lower resolution and linearly interpolated.
+I've also added 130,000 [Lagrangian particles](https://en.wikipedia.org/wiki/Lagrangian_particle_tracking) on top of the simulation, with their positions solved for on the GPU as well.
+
+##Instructions
+
+Click and drag to apply a force to the fluid.  Over time, the colored material in the fluid will dissipate:
+
 <img style="width:100%" src="img2.jpg"/>
-<br/><br/>
-To learn more about the math involved, check out the following sources:<br/>
-<a href="https://pdfs.semanticscholar.org/84b8/c7b7eecf90ebd9d54a51544ca0f8ff93c137.pdf" target="_blank">Real-time ink simulation using a grid-particle method</a> - mixing Eulerian and Lagrangian techniques for fluids<br/>
-<a href="http://developer.download.nvidia.com/books/HTML/gpugems/gpugems_ch38.html" target="_blank">Fast Fluid Dynamics Simulation on the GPU</a> - a very well written tutorial about programming the Navier-Stokes equations on a GPU.
-Though not WebGL specific, it was still very useful.<br/>
-<a href="http://jamie-wong.com/2016/08/05/webgl-fluid-simulation/" target="_blank">Fluid Simulation (with WebGL demo)</a> - this article has some nice, interactive graphics that helped me debug my code.<br/>
-<a href="http://www.dgp.toronto.edu/people/stam/reality/Research/pdf/ns.pdf" target="_blank">Stable Fluids</a> - a paper about stable numerical methods for evaluating Navier-Stokes on a discrete grid.<br/>
-<br/>
-By <a href="http://www.amandaghassaei.com/" target="_blank">Amanda Ghassaei</a>, code on <a href="https://github.com/amandaghassaei/FluidSimulation" target="_blank">Github</a>.
+
+To learn more about the math involved, check out the following sources:  
+
+- [Real-time ink simulation using a grid-particle method](https://pdfs.semanticscholar.org/84b8/c7b7eecf90ebd9d54a51544ca0f8ff93c137.pdf) - mixing Eulerian and Lagrangian techniques for fluids
+- [Fast Fluid Dynamics Simulation on the GPU](http://developer.download.nvidia.com/books/HTML/gpugems/gpugems_ch38.html) - a very well written tutorial about programming the Navier-Stokes equations on a GPU.
+Though not WebGL specific, it was still very useful.
+- [Fluid Simulation (with WebGL demo)](http://jamie-wong.com/2016/08/05/webgl-fluid-simulation/) - this article has some nice, interactive graphics that helped me debug my code.
+- [Stable Fluids](http://www.dgp.toronto.edu/people/stam/reality/Research/pdf/ns.pdf) - a paper about stable numerical methods for evaluating Navier-Stokes on a discrete grid.
+
+
+By [Amanda Ghassaei](http://www.amandaghassaei.com/), code on [Github](https://github.com/amandaghassaei/FluidSimulation).
                 
