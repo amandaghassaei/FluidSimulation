@@ -1,31 +1,40 @@
 import { glcompute, canvas } from './gl';
 import {
-	TOUCH_COLOR_RADIUS,
+	MAX_TOUCH_FORCE_RADIUS_PX,
+	MIN_TOUCH_FORCE_RADIUS_PX,
 	TOUCH_FORCE_RADIUS,
 } from './constants';
 import {
 	forceInteraction,
-	materialInteraction,
-	materialState,
 	velocityState,
 } from './fluid';
 
 // Set up interactions.
 
+function calcTouchRadius(width: number, height: number) {
+	return Math.max(Math.min(TOUCH_FORCE_RADIUS * Math.max(width, height), MAX_TOUCH_FORCE_RADIUS_PX), MIN_TOUCH_FORCE_RADIUS_PX);
+}
+
 // First set up an array to track mouse/touch deltas.
-let inputTouches: { [key: string]: [number, number] } = {};
+let inputTouches: { [key: string]: {
+	current?: [number, number],
+	last: [number, number],
+}} = {};
 canvas.addEventListener('mousemove', (e: MouseEvent) => {
 	const x = e.clientX;
 	const y = e.clientY;
-	const lastPosition = inputTouches.mouse;
-	if (lastPosition === undefined) {
-		inputTouches.mouse = [e.clientX, e.clientY];
+	if (inputTouches.mouse === undefined) {
+		inputTouches.mouse = {
+			last: [x, y],
+		}
 		return;
 	}
-	inputTouches.mouse = [x, y];
-	forceInteraction.setUniform('u_vector', [x - lastPosition[0], - (y - lastPosition[1])], 'FLOAT');
-	glcompute.stepCircle(forceInteraction, [x, canvas.clientHeight - y], TOUCH_FORCE_RADIUS, [velocityState], velocityState);
-	glcompute.stepCircle(materialInteraction, [x, canvas.clientHeight - y], TOUCH_COLOR_RADIUS * 2, [materialState], materialState);
+	const { current } = inputTouches.mouse;
+	if (current) {
+		inputTouches.mouse.last = current;
+	}
+	inputTouches.mouse.current = [x, y];
+	
 });
 canvas.addEventListener("mouseout", (e: MouseEvent) => {
 	if (e.button === 0) {
@@ -35,7 +44,9 @@ canvas.addEventListener("mouseout", (e: MouseEvent) => {
 canvas.addEventListener("touchstart", (e: TouchEvent) => {
 	for (let i = 0; i < e.changedTouches.length; i++) {
 		const touch = e.changedTouches[i];
-		inputTouches[touch.identifier] = [touch.clientX, touch.clientY];
+		inputTouches[touch.identifier] = {
+			last: [touch.clientX, touch.clientY],
+		};
 	}
 });
 canvas.addEventListener('touchmove', (e: TouchEvent) => {
@@ -44,14 +55,19 @@ canvas.addEventListener('touchmove', (e: TouchEvent) => {
 		const touch = e.touches[i];
 		const x = touch.clientX;
 		const y = touch.clientY;
-		const lastPosition = inputTouches[touch.identifier];
-		if (lastPosition === undefined) {
+		if (inputTouches[touch.identifier] === undefined) {
+			// We should never really end up here.
+			inputTouches[touch.identifier] = {
+				last: [x, y],
+			}
 			return;
 		}
-		inputTouches[touch.identifier] = [x, y];
-		forceInteraction.setUniform('u_vector', [x - lastPosition[0], - (y - lastPosition[1])], 'FLOAT');
-		glcompute.stepCircle(forceInteraction, [x, canvas.clientHeight - y], TOUCH_FORCE_RADIUS, [velocityState], velocityState);
-		glcompute.stepCircle(materialInteraction, [x, canvas.clientHeight - y], TOUCH_COLOR_RADIUS * 2, [materialState], materialState);
+		const { current } = inputTouches[touch.identifier];
+		if (current) {
+			// Move current position to last position.
+			inputTouches[touch.identifier].last = current;
+		}
+		inputTouches[touch.identifier].current = [x, y];
 	}
 });
 canvas.addEventListener("touchend", (e: TouchEvent) => {
@@ -78,4 +94,36 @@ function disableZoom(e: Event) {
 	// @ts-ignore
 	document.body.style.msTransform =   scale;       // IE 9
 	document.body.style.transform = scale;
+}
+
+// It works more consistently to do these draw calls from the render loop rather than the event handlers.
+export function stepInteraction() {
+	Object.values(inputTouches).forEach(touch => {
+		const { last, current } = touch;
+		console.log(last, current);
+		if (!current) {
+			return;
+		}
+		if (current[0] == last[0] && current[1] == last[1]) {
+			return;
+		}
+		const vec = [current[0] - last[0], - (current[1] - last[1])] as [number, number];
+		// Cap max vec length.
+		// const length = Math.sqrt(vec[0]*vec[0] + vec[1]*vec[1]);
+		// const maxLength = 20;
+		// if (length > maxLength) {
+		// 	vec[0] *= maxLength / length;
+		// 	vec[1] *= maxLength / length;
+		// }
+		console.log(vec);
+		forceInteraction.setUniform('u_vector', vec, 'FLOAT');
+		glcompute.stepCircle(
+			forceInteraction,
+			[current[0], canvas.clientHeight - current[1]],
+			calcTouchRadius(canvas.clientWidth, canvas.clientHeight),
+			[velocityState],
+			velocityState,
+		);
+		touch.last = current;
+	});
 }

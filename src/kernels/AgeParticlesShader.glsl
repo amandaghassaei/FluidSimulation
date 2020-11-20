@@ -1,5 +1,5 @@
-precision highp float;
-precision highp int;
+precision lowp float;
+precision lowp int;
 
 varying vec2 vUV;
 uniform sampler2D u_ages;

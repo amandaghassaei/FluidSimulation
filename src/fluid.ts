@@ -1,15 +1,21 @@
 import { canvas, glcompute } from './gl';
 import { DT, PRESSURE_CALC_ALPHA, PRESSURE_CALC_BETA } from './constants';
 const advectionSource = require('./kernels/AdvectionShader.glsl');
-const materialInteractionSource = require('./kernels/MaterialInteractionShader.glsl');
 const forceInteractionSource = require('./kernels/ForceInteractionShader.glsl');
-const dissipateMaterialSource = require('./kernels/DissipateMaterialShader.glsl');
 const divergence2DSource = require('./kernels/Divergence2DShader.glsl');
 const jacobiSource = require('./kernels/JacobiShader.glsl');
 const gradientSubtractionSource = require('./kernels/GradientSubtractionShader.glsl');
-const renderFluidSource = require('./kernels/RenderFluidShader.glsl');
 
-const SCALE = 4;
+let SCALE_FACTOR = calcScaleFactor(canvas.clientWidth, canvas.clientHeight);
+const FORCE_SCALE = 0.3;
+
+function calcScaleFactor(width: number, height: number) {
+	const largestDim = Math.max(width, height);
+	if (largestDim <= 750) {
+		return 1;
+	}
+	return Math.ceil(largestDim / 150);
+}
 
 // Init programs.
 export const advection = glcompute.initProgram('advection', advectionSource, [
@@ -29,13 +35,6 @@ export const advection = glcompute.initProgram('advection', advectionSource, [
 		dataType: 'INT',
 	},
 ]);
-export const materialInteraction = glcompute.initProgram('materialInteraction', materialInteractionSource, [
-	{
-		name: 'u_material',
-		value: 0,
-		dataType: 'INT',
-	},
-]);
 export const forceInteraction = glcompute.initProgram('forceInteraction', forceInteractionSource, [
 	{
 		name: 'u_velocity',
@@ -47,13 +46,11 @@ export const forceInteraction = glcompute.initProgram('forceInteraction', forceI
 		value: [0, 0],
 		dataType: 'FLOAT',
 	},
-]);
-export const dissipateMaterial = glcompute.initProgram('dissipateMaterial', dissipateMaterialSource, [
 	{
-		name: 'u_material',
-		value: 0,
-		dataType: 'INT',
-	},
+		name: 'u_scaleFactor',
+		value: FORCE_SCALE,
+		dataType: 'FLOAT',
+	}
 ]);
 export const divergence2D = glcompute.initProgram('divergence2D', divergence2DSource, [
 	{
@@ -63,7 +60,7 @@ export const divergence2D = glcompute.initProgram('divergence2D', divergence2DSo
 	},
 	{
 		name: 'u_pxSize',
-		value: [SCALE / canvas.clientWidth, SCALE / canvas.clientHeight],
+		value: [SCALE_FACTOR / canvas.clientWidth, SCALE_FACTOR / canvas.clientHeight],
 		dataType: 'FLOAT',
 	}
 ]);
@@ -80,7 +77,7 @@ export const jacobi = glcompute.initProgram('jacobi', jacobiSource, [
 	},
 	{
 		name: 'u_pxSize',
-		value: [SCALE / canvas.clientWidth, SCALE / canvas.clientHeight],
+		value: [SCALE_FACTOR / canvas.clientWidth, SCALE_FACTOR / canvas.clientHeight],
 		dataType: 'FLOAT',
 	},
 	{
@@ -97,7 +94,7 @@ export const jacobi = glcompute.initProgram('jacobi', jacobiSource, [
 export const gradientSubtraction = glcompute.initProgram('gradientSubtraction', gradientSubtractionSource, [
 	{
 		name: 'u_pxSize',
-		value: [SCALE / canvas.clientWidth, SCALE / canvas.clientHeight],
+		value: [SCALE_FACTOR / canvas.clientWidth, SCALE_FACTOR / canvas.clientHeight],
 		dataType: 'FLOAT',
 	},
 	{
@@ -111,28 +108,13 @@ export const gradientSubtraction = glcompute.initProgram('gradientSubtraction', 
 		dataType: 'INT',
 	},
 ]);
-export const renderFluid = glcompute.initProgram('render', renderFluidSource, [
-	{
-		name: 'u_material',
-		value: 0,
-		dataType: 'INT',
-	},
-]);
 
 // Init state.
 const width = canvas.clientWidth;
 const height = canvas.clientHeight;
-export const materialState = glcompute.initDataLayer('material',
-{
-	dimensions: [width, height],
-	type: 'float16',
-	numComponents: 1,
-	wrapS: 'REPEAT',
-	wrapT: 'REPEAT',
-}, true, 2);
 export const velocityState = glcompute.initDataLayer('velocity',
 {
-	dimensions: [width / SCALE, height / SCALE],
+	dimensions: [Math.ceil(width / SCALE_FACTOR), Math.ceil(height / SCALE_FACTOR)],
 	type: 'float16',
 	numComponents: 2,
 	wrapS: 'REPEAT',
@@ -140,7 +122,7 @@ export const velocityState = glcompute.initDataLayer('velocity',
 }, true, 2);
 export const divergenceState = glcompute.initDataLayer('divergence',
 {
-	dimensions: [width / SCALE, height / SCALE],
+	dimensions: [Math.ceil(width / SCALE_FACTOR), Math.ceil(height / SCALE_FACTOR)],
 	type: 'float16',
 	numComponents: 1,
 	wrapS: 'REPEAT',
@@ -148,7 +130,7 @@ export const divergenceState = glcompute.initDataLayer('divergence',
 }, true, 1);
 export const pressureState = glcompute.initDataLayer('pressure',
 {
-	dimensions: [width / SCALE, height / SCALE],
+	dimensions: [Math.ceil(width / SCALE_FACTOR), Math.ceil(height / SCALE_FACTOR)],
 	type: 'float16',
 	numComponents: 1,
 	wrapS: 'REPEAT',
@@ -157,12 +139,13 @@ export const pressureState = glcompute.initDataLayer('pressure',
 
 export function fluidOnResize(width: number, height: number) {
 	// Re-init textures at new size.
-	materialState.resize([width, height]);
-	velocityState.resize([width / SCALE, height / SCALE]);
-	divergenceState.resize([width / SCALE, height / SCALE]);
-	pressureState.resize([width / SCALE, height / SCALE]);
-	divergence2D.setUniform('u_pxSize', [SCALE / width, SCALE  / height], 'FLOAT');
-	jacobi.setUniform('u_pxSize', [SCALE / width, SCALE / height], 'FLOAT');
-	gradientSubtraction.setUniform('u_pxSize', [SCALE / width, SCALE / height], 'FLOAT');
+	SCALE_FACTOR = calcScaleFactor(width, height);
+	velocityState.resize([Math.ceil(width / SCALE_FACTOR), Math.ceil(height / SCALE_FACTOR)]);
+	divergenceState.resize([Math.ceil(width / SCALE_FACTOR), Math.ceil(height / SCALE_FACTOR)]);
+	pressureState.resize([Math.ceil(width / SCALE_FACTOR), Math.ceil(height / SCALE_FACTOR)]);
+	divergence2D.setUniform('u_pxSize', [SCALE_FACTOR / width, SCALE_FACTOR  / height], 'FLOAT');
+	jacobi.setUniform('u_pxSize', [SCALE_FACTOR / width, SCALE_FACTOR / height], 'FLOAT');
+	gradientSubtraction.setUniform('u_pxSize', [SCALE_FACTOR / width, SCALE_FACTOR / height], 'FLOAT');
+	forceInteraction.setUniform('u_scaleFactor', FORCE_SCALE, 'FLOAT');
 	glcompute.onResize(canvas);
 }

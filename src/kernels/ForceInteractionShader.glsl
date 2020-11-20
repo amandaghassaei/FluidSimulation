@@ -1,16 +1,21 @@
 // Modify velocity field on interaction.
-precision highp float;
-
-#define SCALE 0.3
+precision lowp float;
 
 varying vec2 vUV;
 varying vec2 vUV_local;
 uniform sampler2D u_velocity;
 uniform vec2 u_vector;
+uniform float u_scaleFactor;
 
 void main() {
-	vec2 radialVec = vUV_local * 2.0 - 1.0;
+	vec2 radialVec = (vUV_local * 2.0 - 1.0);
 	float radiusSq = dot(radialVec, radialVec);
-	vec2 velocity = texture2D(u_velocity, vUV).xy;
-	gl_FragColor = vec4(velocity + (SCALE * (1.0 - radiusSq)) * u_vector, 0, 0);
+	vec2 velocity = texture2D(u_velocity, vUV).xy + (1.0 - radiusSq) * u_vector * u_scaleFactor;
+	// Clip max velocity.
+	float mag = length(velocity);
+	// const float maxMag = 3.0;
+	// if (mag > 0.0 && mag > maxMag) {
+	// 	velocity *= maxMag / mag;
+	// }
+	gl_FragColor = vec4(velocity, 0, 0);
 }

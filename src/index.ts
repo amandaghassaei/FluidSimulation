@@ -1,33 +1,34 @@
 import { glcompute } from './gl';
 import { 
 	advection,
-	dissipateMaterial,
 	divergence2D,
 	divergenceState,
 	gradientSubtraction,
 	jacobi,
-	materialState,
 	pressureState,
 	velocityState,
-	renderFluid,
 	fluidOnResize,
 } from './fluid';
 import './interactions';
 import MicroModal from 'micromodal';
 import {
+	DT,
+	NUM_RENDER_STEPS,
 	PRESSURE_CALC_ALPHA,
 	PRESSURE_CALC_BETA,
-	VELOCITY_DIFFUSION_ALPHA,
-	VELOCITY_DIFFUSION_BETA,
 } from './constants';
 import {
 	particlesOnResize,
 	particlePositionState,
 	particleAgeState,
+	trailState,
 	advectParticles,
 	renderParticles,
 	ageParticles,
+	overlayTexture,
+	fadeTrails,
 } from './particles';
+import { stepInteraction } from './interactions';
 
 // Init help modal.
 MicroModal.init();
@@ -45,13 +46,14 @@ function onResize() {
 // Start render loop.
 window.requestAnimationFrame(step);
 function step() {
-	// Dissipate material.
-	glcompute.step(dissipateMaterial, [materialState], materialState);
+	// Apply interactions.
+	stepInteraction();
+
 	// Advect the velocity vector field.
 	glcompute.step(advection, [velocityState, velocityState], velocityState);
 	// // Diffuse the velocity vector field (optional).
-	// jacobi.setUniform('u_alpha', VELOCITY_DIFFUSION_ALPHA, 'FLOAT');
-	// jacobi.setUniform('u_beta', VELOCITY_DIFFUSION_BETA, 'FLOAT');
+	// jacobi.setUniform('u_alpha', 0.5, 'FLOAT');
+	// jacobi.setUniform('u_beta', 1/4.5, 'FLOAT');
 	// for (let i = 0; i < 1; i++) {
 	// 	glcompute.step(jacobi, [velocityState, velocityState], velocityState);
 	// }
@@ -65,18 +67,20 @@ function step() {
 	}
 	// Subtract the pressure gradient from velocity to obtain a velocity vector field with zero divergence.
 	glcompute.step(gradientSubtraction, [pressureState, velocityState], velocityState);
-	// Advect the material with the divergence-free velocity vector field.
-	glcompute.step(advection, [materialState, velocityState], materialState);
-	// Render current state.
-	glcompute.step(renderFluid, [materialState]);
 
-	// Advect particles.
-	glcompute.step(advectParticles, [particlePositionState, velocityState, particleAgeState], particlePositionState);
 	// Increment particle age.
 	glcompute.step(ageParticles, [particleAgeState], particleAgeState);
-	// Render particles on top.
-	// TODO: init larger particles for hd displays.
-	glcompute.drawPoints(renderParticles, [particlePositionState, particleAgeState]);
+	// Fade current trails.
+	glcompute.step(fadeTrails, [trailState], trailState);
+	for (let i = 0; i < NUM_RENDER_STEPS; i++) {
+		// Advect particles.
+		advectParticles.setUniform('u_dt', DT / NUM_RENDER_STEPS , 'FLOAT');
+		glcompute.step(advectParticles, [particlePositionState, velocityState, particleAgeState], particlePositionState);
+		// Render particles to texture for trail effect.
+		glcompute.drawPoints(renderParticles, [particlePositionState, particleAgeState, velocityState], trailState);
+	}
+	// Render to screen.
+	glcompute.step(overlayTexture, [trailState], undefined, { shouldBlendAlpha: true });
 
 	// Start a new render cycle.
 	window.requestAnimationFrame(step);
