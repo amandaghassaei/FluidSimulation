@@ -54,3 +54,7 @@ a, a:hover, a:visited, a:focus{
 a.btn:visited, a.btn:focus{
     color: white;
 }
+
+.dg.ac {
+    opacity: 0.95;
+}

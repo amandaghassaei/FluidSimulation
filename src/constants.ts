@@ -1,5 +1,6 @@
 export const DT = 1 / 60;
 export const TOUCH_FORCE_RADIUS = 20 / 1280; // Give the radius as a fraction of the largest dim of the canvas.
+export const TOUCH_FORCE_SCALE = 0.3;
 export const MIN_TOUCH_FORCE_RADIUS_PX = 15;
 export const MAX_TOUCH_FORCE_RADIUS_PX = 40;
 export const PRESSURE_CALC_ALPHA = -1;

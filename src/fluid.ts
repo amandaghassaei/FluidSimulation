@@ -1,13 +1,11 @@
 import { canvas, glcompute } from './gl';
 import { DT, PRESSURE_CALC_ALPHA, PRESSURE_CALC_BETA } from './constants';
 const advectionSource = require('./kernels/AdvectionShader.glsl');
-const forceInteractionSource = require('./kernels/ForceInteractionShader.glsl');
 const divergence2DSource = require('./kernels/Divergence2DShader.glsl');
 const jacobiSource = require('./kernels/JacobiShader.glsl');
 const gradientSubtractionSource = require('./kernels/GradientSubtractionShader.glsl');
 
 let SCALE_FACTOR = calcScaleFactor(canvas.clientWidth, canvas.clientHeight);
-const FORCE_SCALE = 0.3;
 
 function calcScaleFactor(width: number, height: number) {
 	const largestDim = Math.max(width, height);
@@ -17,8 +15,10 @@ function calcScaleFactor(width: number, height: number) {
 	return Math.ceil(largestDim / 150);
 }
 
+// TODO: REPEAT wrap does not work in safari.
+
 // Init programs.
-export const advection = glcompute.initProgram('advection', advectionSource, [
+const advection = glcompute.initProgram('advection', advectionSource, [
 	{
 		name: 'u_dt',
 		value: DT,
@@ -35,24 +35,8 @@ export const advection = glcompute.initProgram('advection', advectionSource, [
 		dataType: 'INT',
 	},
 ]);
-export const forceInteraction = glcompute.initProgram('forceInteraction', forceInteractionSource, [
-	{
-		name: 'u_velocity',
-		value: 0,
-		dataType: 'INT',
-	},
-	{
-		name: 'u_vector',
-		value: [0, 0],
-		dataType: 'FLOAT',
-	},
-	{
-		name: 'u_scaleFactor',
-		value: FORCE_SCALE,
-		dataType: 'FLOAT',
-	}
-]);
-export const divergence2D = glcompute.initProgram('divergence2D', divergence2DSource, [
+
+const divergence2D = glcompute.initProgram('divergence2D', divergence2DSource, [
 	{
 		name: 'u_vectorField',
 		value: 0,
@@ -64,7 +48,7 @@ export const divergence2D = glcompute.initProgram('divergence2D', divergence2DSo
 		dataType: 'FLOAT',
 	}
 ]);
-export const jacobi = glcompute.initProgram('jacobi', jacobiSource, [
+const jacobi = glcompute.initProgram('jacobi', jacobiSource, [
 	{
 		name: 'u_alpha',
 		value: PRESSURE_CALC_ALPHA,
@@ -91,7 +75,7 @@ export const jacobi = glcompute.initProgram('jacobi', jacobiSource, [
 		dataType: 'INT',
 	},
 ]);
-export const gradientSubtraction = glcompute.initProgram('gradientSubtraction', gradientSubtractionSource, [
+const gradientSubtraction = glcompute.initProgram('gradientSubtraction', gradientSubtractionSource, [
 	{
 		name: 'u_pxSize',
 		value: [SCALE_FACTOR / canvas.clientWidth, SCALE_FACTOR / canvas.clientHeight],
@@ -120,7 +104,7 @@ export const velocityState = glcompute.initDataLayer('velocity',
 	wrapS: 'REPEAT',
 	wrapT: 'REPEAT',
 }, true, 2);
-export const divergenceState = glcompute.initDataLayer('divergence',
+const divergenceState = glcompute.initDataLayer('divergence',
 {
 	dimensions: [Math.ceil(width / SCALE_FACTOR), Math.ceil(height / SCALE_FACTOR)],
 	type: 'float16',
@@ -128,7 +112,7 @@ export const divergenceState = glcompute.initDataLayer('divergence',
 	wrapS: 'REPEAT',
 	wrapT: 'REPEAT',
 }, true, 1);
-export const pressureState = glcompute.initDataLayer('pressure',
+const pressureState = glcompute.initDataLayer('pressure',
 {
 	dimensions: [Math.ceil(width / SCALE_FACTOR), Math.ceil(height / SCALE_FACTOR)],
 	type: 'float16',
@@ -146,6 +130,26 @@ export function fluidOnResize(width: number, height: number) {
 	divergence2D.setUniform('u_pxSize', [SCALE_FACTOR / width, SCALE_FACTOR  / height], 'FLOAT');
 	jacobi.setUniform('u_pxSize', [SCALE_FACTOR / width, SCALE_FACTOR / height], 'FLOAT');
 	gradientSubtraction.setUniform('u_pxSize', [SCALE_FACTOR / width, SCALE_FACTOR / height], 'FLOAT');
-	forceInteraction.setUniform('u_scaleFactor', FORCE_SCALE, 'FLOAT');
 	glcompute.onResize(canvas);
+}
+
+export function stepFluid() {
+	// Advect the velocity vector field.
+	glcompute.step(advection, [velocityState, velocityState], velocityState);
+	// // Diffuse the velocity vector field (optional).
+	// jacobi.setUniform('u_alpha', 0.5, 'FLOAT');
+	// jacobi.setUniform('u_beta', 1/4.5, 'FLOAT');
+	// for (let i = 0; i < 1; i++) {
+	// 	glcompute.step(jacobi, [velocityState, velocityState], velocityState);
+	// }
+	// Compute divergence of advected velocity field.
+	glcompute.step(divergence2D, [velocityState], divergenceState);
+	// Compute the pressure gradient of the advected velocity vector field (using jacobi iterations).
+	jacobi.setUniform('u_alpha', PRESSURE_CALC_ALPHA, 'FLOAT');
+	jacobi.setUniform('u_beta', PRESSURE_CALC_BETA, 'FLOAT');
+	for (let i = 0; i < 20; i++) {
+		glcompute.step(jacobi, [pressureState, divergenceState], pressureState);
+	}
+	// Subtract the pressure gradient from velocity to obtain a velocity vector field with zero divergence.
+	glcompute.step(gradientSubtraction, [pressureState, velocityState], velocityState);
 }

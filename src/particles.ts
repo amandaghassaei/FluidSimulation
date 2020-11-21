@@ -1,6 +1,7 @@
 import { glcompute, canvas } from './gl';
 import { PointsVertexShader, PassThroughFragmentShader } from 'glcompute';
-import { PARTICLE_DENSITY, MAX_NUM_PARTICLES, DT, PARTICLE_LIFETIME, TRAIL_LIFETIME } from './constants';
+import { PARTICLE_DENSITY, MAX_NUM_PARTICLES, DT, PARTICLE_LIFETIME, TRAIL_LIFETIME, NUM_RENDER_STEPS } from './constants';
+import { velocityState } from './fluid';
 const particleFragmentSource = require('./kernels/ParticleFragmentShader.glsl');
 const advectParticlesSource = require('./kernels/AdvectParticlesShader.glsl');
 const ageParticlesSource = require('./kernels/AgeParticlesShader.glsl');
@@ -14,13 +15,13 @@ let NUM_PARTICLES = calcNumParticles(canvas.clientWidth, canvas.clientHeight);
 
 // Init particles.
 let positions = initRandomPositions(new Float32Array(NUM_PARTICLES * 2), canvas.clientWidth, canvas.clientHeight);
-export const particlePositionState = glcompute.initDataLayer('position', {
+const particlePositionState = glcompute.initDataLayer('position', {
 	dimensions: NUM_PARTICLES,
 	type: 'float32',
 	numComponents: 2,
 	data: positions,
 }, true, 2);
-export const particleAgeState = glcompute.initDataLayer('age', {
+const particleAgeState = glcompute.initDataLayer('age', {
 	dimensions: NUM_PARTICLES,
 	type: 'float32',
 	numComponents: 1,
@@ -28,7 +29,7 @@ export const particleAgeState = glcompute.initDataLayer('age', {
 }, true, 2);
 
 // Init a render target for trail effect.
-export const trailState = glcompute.initDataLayer('trails', {
+const trailState = glcompute.initDataLayer('trails', {
 	dimensions: [canvas.clientWidth, canvas.clientHeight],
 	type: 'uint8',
 	numComponents: 4,
@@ -40,8 +41,8 @@ function initRandomAges(_ages: Float32Array) {
 	}
 	return _ages;
 }
-function initRandomPositions(_positions: Float32Array, width: number, height: number) {
-	for (let i = 0; i < NUM_PARTICLES; i++) {
+export function initRandomPositions(_positions: Float32Array, width: number, height: number) {
+	for (let i = 0; i < _positions.length / 2; i++) {
 		_positions[2 * i] = Math.random() * width;;
 		_positions[2 * i + 1] = Math.random() * height;
 	}
@@ -49,7 +50,7 @@ function initRandomPositions(_positions: Float32Array, width: number, height: nu
 }
 
 // Init programs.
-export const renderParticles = glcompute.initProgram('renderParticles', particleFragmentSource, [
+const renderParticles = glcompute.initProgram('renderParticles', particleFragmentSource, [
 	{
 		name: 'u_positions',
 		value: 0,
@@ -71,7 +72,7 @@ export const renderParticles = glcompute.initProgram('renderParticles', particle
 		dataType: 'FLOAT',
 	},
 ], PointsVertexShader);
-export const ageParticles = glcompute.initProgram('ageParticles', ageParticlesSource, [
+const ageParticles = glcompute.initProgram('ageParticles', ageParticlesSource, [
 	{
 		name: 'u_ages',
 		value: 0,
@@ -83,7 +84,7 @@ export const ageParticles = glcompute.initProgram('ageParticles', ageParticlesSo
 		dataType: 'FLOAT',
 	},
 ]);
-export const advectParticles = glcompute.initProgram('advectParticles', advectParticlesSource, [
+const advectParticles = glcompute.initProgram('advectParticles', advectParticlesSource, [
 	{
 		name: 'u_positions',
 		value: 0,
@@ -110,14 +111,14 @@ export const advectParticles = glcompute.initProgram('advectParticles', advectPa
 		dataType: 'FLOAT',
 	},
 ]);
-export const overlayTexture = glcompute.initProgram('particleOverlay', PassThroughFragmentShader, [
+const overlayTexture = glcompute.initProgram('particleOverlay', PassThroughFragmentShader, [
 	{
 		name: 'u_state',
 		value: 0,
 		dataType: 'INT',
 	},
 ]);
-export const fadeTrails = glcompute.initProgram('fadeTrails', incrementOpacitySource, [
+const fadeTrails = glcompute.initProgram('fadeTrails', incrementOpacitySource, [
 	{
 		name: 'u_image',
 		value: 0,
@@ -136,4 +137,20 @@ export function particlesOnResize(width: number, height: number) {
 	particlePositionState.resize(NUM_PARTICLES, positions);
 	advectParticles.setUniform('u_pxSize', [1 / width, 1 / height], 'FLOAT');
 	trailState.resize([width, height]);
+}
+
+export function stepParticles() {
+	// Increment particle age.
+	glcompute.step(ageParticles, [particleAgeState], particleAgeState);
+	// Fade current trails.
+	glcompute.step(fadeTrails, [trailState], trailState);
+	for (let i = 0; i < NUM_RENDER_STEPS; i++) {
+		// Advect particles.
+		advectParticles.setUniform('u_dt', DT / NUM_RENDER_STEPS , 'FLOAT');
+		glcompute.step(advectParticles, [particlePositionState, velocityState, particleAgeState], particlePositionState);
+		// Render particles to texture for trail effect.
+		glcompute.drawPoints(renderParticles, [particlePositionState, particleAgeState, velocityState], trailState);
+	}
+	// Render to screen.
+	glcompute.step(overlayTexture, [trailState], undefined);
 }

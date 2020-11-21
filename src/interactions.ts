@@ -3,11 +3,12 @@ import {
 	MAX_TOUCH_FORCE_RADIUS_PX,
 	MIN_TOUCH_FORCE_RADIUS_PX,
 	TOUCH_FORCE_RADIUS,
+	TOUCH_FORCE_SCALE,
 } from './constants';
 import {
-	forceInteraction,
 	velocityState,
 } from './fluid';
+const forceInteractionSource = require('./kernels/ForceInteractionShader.glsl');
 
 // Set up interactions.
 
@@ -15,11 +16,32 @@ function calcTouchRadius(width: number, height: number) {
 	return Math.max(Math.min(TOUCH_FORCE_RADIUS * Math.max(width, height), MAX_TOUCH_FORCE_RADIUS_PX), MIN_TOUCH_FORCE_RADIUS_PX);
 }
 
+// Set up force interaction program.
+const forceInteraction = glcompute.initProgram('forceInteraction', forceInteractionSource, [
+	{
+		name: 'u_velocity',
+		value: 0,
+		dataType: 'INT',
+	},
+	{
+		name: 'u_vector',
+		value: [0, 0],
+		dataType: 'FLOAT',
+	},
+	{
+		name: 'u_scaleFactor',
+		value: TOUCH_FORCE_SCALE,
+		dataType: 'FLOAT',
+	}
+]);
+
 // First set up an array to track mouse/touch deltas.
 let inputTouches: { [key: string]: {
 	current?: [number, number],
 	last: [number, number],
 }} = {};
+
+// Add event handlers.
 canvas.addEventListener('mousemove', (e: MouseEvent) => {
 	const x = e.clientX;
 	const y = e.clientY;
@@ -82,6 +104,7 @@ canvas.addEventListener("touchcancel", (e: TouchEvent) => {
 		delete inputTouches[touch.identifier]
 	}
 });
+
 // Disable other gestures.
 document.addEventListener('gesturestart', disableZoom);
 document.addEventListener('gesturechange', disableZoom); 
@@ -96,11 +119,11 @@ function disableZoom(e: Event) {
 	document.body.style.transform = scale;
 }
 
-// It works more consistently to do these draw calls from the render loop rather than the event handlers.
+// It works more consistently across browsers to do these draw calls from the render loop
+// rather than the event handlers.
 export function stepInteraction() {
 	Object.values(inputTouches).forEach(touch => {
 		const { last, current } = touch;
-		console.log(last, current);
 		if (!current) {
 			return;
 		}
@@ -115,7 +138,6 @@ export function stepInteraction() {
 		// 	vec[0] *= maxLength / length;
 		// 	vec[1] *= maxLength / length;
 		// }
-		console.log(vec);
 		forceInteraction.setUniform('u_vector', vec, 'FLOAT');
 		glcompute.stepCircle(
 			forceInteraction,
