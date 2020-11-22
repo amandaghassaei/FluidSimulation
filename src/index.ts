@@ -10,7 +10,8 @@ import {
 	stepParticles,
 } from './particles';
 import { stepInteraction } from './interactions';
-import { hideGUI, showGUI } from './gui';
+import { guiOnResize, hideGUI, showGUI } from './gui';
+import { canvas } from './gl';
 
 // Init help modal.
 MicroModal.init();
@@ -27,11 +28,18 @@ window.addEventListener('keydown', (e: KeyboardEvent) => {
 // Add resize listener.
 onResize();
 window.addEventListener('resize', onResize);
+let needsResize = false;
 function onResize() {
-	const width = window.innerWidth;
-	const height = window.innerHeight;
+	if (paused) {
+		needsResize = true;
+		return;
+	}
+	const width = canvas.clientWidth;
+	const height = canvas.clientHeight;
 	particlesOnResize(width, height);
 	fluidOnResize(width, height);
+	guiOnResize(width, height);
+	needsResize = false;
 }
 
 // Start render loop.
@@ -43,6 +51,10 @@ function step() {
 	if (paused) {
 		stepSVGParticles();
 		return;
+	}
+
+	if (needsResize) {
+		onResize();
 	}
 
 	// Apply interactions.

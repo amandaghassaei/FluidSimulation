@@ -3,9 +3,10 @@ import { gcodeExportState, generateNewSVGParticles, generateNewSVGTrails, guiSta
 import { canvas } from './gl';
 
 const gui = new GUI({width: 400});
-gui.add(guiState, 'Regenerate with new particles');
+gui.add(guiState, 'Regenerate');
 gui.add(guiState, 'Num Particles', 1, undefined, 1).onFinishChange(generateNewSVGParticles);
 gui.add(guiState, 'Trail Length', 1, undefined, 1).onFinishChange(generateNewSVGTrails);
+gui.add(guiState, 'Trail Subsampling', 1, undefined, 1).onFinishChange(generateNewSVGTrails);
 
 const saveSVGFolder = gui.addFolder(`SVG export`);
 saveSVGFolder.open();
@@ -26,9 +27,8 @@ heightController.onFinishChange(() => {
 });
 saveGcodeFolder.add(gcodeExportState, 'Min Segment Length (in)', 0, undefined, .001);
 saveGcodeFolder.add(gcodeExportState, 'Retract Height (in)', 0, undefined, .001);
-saveGcodeFolder.add(gcodeExportState, 'Feed Height (in)', 0, undefined, .001);
+saveGcodeFolder.add(gcodeExportState, 'Draw Height (in)', 0, undefined, .001);
 saveGcodeFolder.add(gcodeExportState, 'Feed Rate (ipm)', 0, undefined, 0.5);
-// saveGcodeFolder.add(gcodeExportState, 'Rapid Rate (ipm)', 0, undefined, 0.5);
 saveGcodeFolder.add(gcodeExportState, 'Save Gcode');
 
 
@@ -42,3 +42,8 @@ export function showGUI() {
 }
 
 hideGUI(); // Invisible to start
+
+export function guiOnResize(width: number, height: number) {
+	widthController.setValue(width / 72);
+	heightController.setValue(height / 72);
+}

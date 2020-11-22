@@ -9,7 +9,8 @@ import { saveAs } from 'file-saver';
 export const guiState = {
  	'Num Particles': 1000,
 	'Trail Length': 1000,
-	'Regenerate with new particles': generateNewSVGParticles,
+	'Trail Subsampling': 5,
+	'Regenerate': generateNewSVGParticles,
 }
 
 export const svgExportState = {
@@ -22,10 +23,9 @@ export const gcodeExportState = {
 	'Width (in)': canvas.clientWidth / 72,
 	'Height (in)': canvas.clientHeight / 72,
 	'Min Segment Length (in)': 0.05,
-	'Feed Height (in)': -0.25,
-	'Retract Height (in)': 0,
-	'Feed Rate (ipm)': 45,
-	// 'Rapid Rate (ipm)': 100,
+	'Draw Height (in)': 0,
+	'Retract Height (in)': 0.125,
+	'Feed Rate (ipm)': 60,
 	'Save Gcode': saveGcode,
 }
 
@@ -57,7 +57,7 @@ const advectParticles = glcompute.initProgram('advectParticles', advectParticles
 	},
 	{
 		name: 'u_dt',
-		value: DT,
+		value: DT / guiState['Trail Subsampling'],
 		dataType: 'FLOAT',
 	},
 	{
@@ -82,15 +82,17 @@ export function generateNewSVGParticles() {
 export function generateNewSVGTrails() {
 	// Use same initial positions, just generate new trails.
 	particlePositionState.resize(guiState['Num Particles'], initialPositions);
-	// Clear the current particleTrails.
-	trailState.clear();
+	// Clear the current particleTrails and make sure size is updated in case it has changed.
+	trailState.resize([canvas.clientWidth, canvas.clientHeight]);
+	advectParticles.setUniform('u_pxSize', [1 / canvas.clientWidth, 1 / canvas.clientHeight], 'FLOAT');
 	numSteps = 0;
 }
 
 export function stepSVGParticles() {
-	for (let i = 0; i < 20; i++) { // this helps to speeds things along with the visualization.
-		if (numSteps++ < guiState['Trail Length']) {
+	for (let i = 0; i < 20 * guiState['Trail Subsampling']; i++) { // this helps to speeds things along with the visualization.
+		if (numSteps++ < guiState['Trail Length'] * guiState['Trail Subsampling']) {
 			// Advect particles.
+			advectParticles.setUniform('u_dt', DT / guiState['Trail Subsampling'], 'FLOAT');
 			glcompute.step(advectParticles, [particlePositionState, velocityState], particlePositionState);
 			// Render particles to texture for trail effect.
 			// TODO: draw line segments instead.
@@ -101,6 +103,24 @@ export function stepSVGParticles() {
 			return;
 		}
 	}
+}
+
+function getEdgeIntersectionWithBounds(p1: [number, number], p2: [number, number]) {
+	let t = (0 - p2[0]) / (p1[0] - p2[0]);
+	if (t < 0 || t > 1) {
+		t = (canvas.clientWidth - p2[0]) / (p1[0] - p2[0]);
+		if (t < 0 || t > 1) {
+			t = (0 - p2[1]) / (p1[1] - p2[1]);
+			if (t < 0 || t > 1) {
+				t = (canvas.clientHeight - p2[1]) / (p1[1] - p2[1]);
+			}
+		}
+	}
+	if (t < 0 || t > 1) {
+		return null;
+	}
+
+	return [p1[0] * t + p2[0] * (1 - t), p1[1] * t + p2[1] * (1 - t)] as [number, number];
 }
 
 function getPaths(minSegmentLength: number) {
@@ -117,8 +137,9 @@ function getPaths(minSegmentLength: number) {
 	// Init a place to store the current positions.
 	let currentPositions!: Float32Array;
 	const minSegmentLengthSq = minSegmentLength * minSegmentLength;
-	for (let i = 0; i < guiState['Trail Length']; i++) {
+	for (let i = 0; i < guiState['Trail Length'] * guiState['Trail Subsampling']; i++) {
 		// Advect particles.
+		advectParticles.setUniform('u_dt', DT / guiState['Trail Subsampling'], 'FLOAT');
 		glcompute.step(advectParticles, [particlePositionState, velocityState], particlePositionState);
 		// Read data to CPU.
 		currentPositions = glcompute.getValues(particlePositionState);
@@ -126,19 +147,63 @@ function getPaths(minSegmentLength: number) {
 			const lastPosition = lastPositions[j];
 			const position = [currentPositions[2*j], currentPositions[2*j+1]] as [number, number];
 			// Check that segment is sufficiently large.
-			// To many short segments will slow down the plotting time.
-			const segLengthSq = (lastPosition[0] - position[0]) * (lastPosition[0] - position[0]) + (lastPosition[1] - position[1]) * (lastPosition[1] - position[1]);
+			// Too many short segments will slow down the plotting time.
+			let segLengthSq = (lastPosition[0] - position[0]) * (lastPosition[0] - position[0]) + (lastPosition[1] - position[1]) * (lastPosition[1] - position[1]);
 			if (segLengthSq < minSegmentLengthSq) {
 				continue;
 			}
 			// Check that we haven't wrapped over the edge of the canvas onto the other side.
-			if (
-				Math.abs(lastPosition[0] - position[0]) / canvas.clientWidth > 0.9 ||
+			if (Math.abs(lastPosition[0] - position[0]) / canvas.clientWidth > 0.9 ||
 				Math.abs(lastPosition[1] - position[1]) / canvas.clientHeight > 0.9) {
-				// TODO: it would be nice to extend this to the edge of the canvas by calculating an intersection.
+				// Extend this to the edge of the canvas by calculating an intersection.
+				const extendedPosition1 = position.slice() as [number, number];
+				const extendedPosition2 = lastPosition.slice() as [number, number];
+				if (Math.abs(lastPosition[0] - position[0]) / canvas.clientWidth > 0.9) {
+					if (lastPosition[0] > position[0]) {
+						extendedPosition1[0] += canvas.clientWidth;
+						extendedPosition2[0] -= canvas.clientWidth;
+					} else {
+						extendedPosition1[0] -= canvas.clientWidth;
+						extendedPosition2[0] += canvas.clientWidth;
+					}
+				}
+				if (Math.abs(lastPosition[1] - position[1]) / canvas.clientHeight > 0.9) {
+					if (lastPosition[1] > position[1]) {
+						extendedPosition1[1] += canvas.clientHeight;
+						extendedPosition2[1] -= canvas.clientHeight;
+					} else {
+						extendedPosition1[1] -= canvas.clientHeight;
+						extendedPosition2[1] += canvas.clientHeight;
+					}
+				}
+
+				const edge1 = getEdgeIntersectionWithBounds(lastPosition, extendedPosition1);
+				if (edge1) {
+					paths[j].push(edge1);
+				}
+
 				paths.push(paths[j].slice());// Push this path to the end of the list.
 				// Start a new path at this index.
 				paths[j] = [];
+
+				const edge2 = getEdgeIntersectionWithBounds(extendedPosition2, position);
+				if (edge2) {
+					paths[j].push(edge2);
+				}
+			} else if (segLengthSq > 100){
+				// TODO: sometimes there is a factor of two error from the float conversion.
+				// I need to fix this.
+				if (Math.round(position[0] / lastPosition[0]) === 2) {
+					position[0] /= 2;
+				}
+				if (Math.round(position[1] / lastPosition[1]) === 2) {
+					position[1] /= 2;
+				}
+				segLengthSq = (lastPosition[0] - position[0]) * (lastPosition[0] - position[0]) + (lastPosition[1] - position[1]) * (lastPosition[1] - position[1]);
+				if (segLengthSq > 100) {
+					console.warn('Bad position: ', lastPosition, position);
+					continue;// Ignore this point.
+				}
 			}
 			paths[j].push(position);
 			lastPositions[j] = position;
@@ -146,7 +211,7 @@ function getPaths(minSegmentLength: number) {
 	}
 	for (let j = 0; j < guiState['Num Particles']; j++) {
 		// Check if any of these paths don't contain any segments.
-		if (lastPositions[j][0] === initialPositions[2 * j] && lastPositions[j][1] === initialPositions[2 * j + 1]) {
+		if (paths[j].length === 1) {
 			// Add a segment, even if it is < minSegLength;
 			paths[j].push([currentPositions[2 * j], currentPositions[2 * j + 1]]);
 		}
@@ -170,7 +235,9 @@ function saveSVG() {
 }
 
 function getCacheIndex(position: [number, number], binIncr: number) {
-	return [Math.floor(position[0] / binIncr), Math.floor(position[1] / binIncr)];
+	const x = Math.min(Math.max(position[0], 0), canvas.clientWidth);
+	const y = Math.min(Math.max(position[1], 0), canvas.clientHeight);
+	return [Math.floor(x / binIncr), Math.floor(y / binIncr)];
 }
 
 function cachePosition(i: number, position: [number, number], binIncr: number, cache: number[][][]) {
@@ -226,9 +293,9 @@ function saveGcode() {
 	const binIncr = maxDim / 20;
 	const cacheDim = [Math.ceil(width / binIncr), Math.ceil(height / binIncr)] as [number, number];
 	const paths2DCache: number[][][] = [];
-	for (let x = 0; x < cacheDim[0]; x++) {
+	for (let x = 0; x <= cacheDim[0]; x++) {
 		paths2DCache.push([]);
-		for (let y = 0; y < cacheDim[1]; y++) {
+		for (let y = 0; y <= cacheDim[1]; y++) {
 			paths2DCache[x].push([]);
 		}
 	}
@@ -252,7 +319,7 @@ function saveGcode() {
 	
 	// Get gcode params.
 	const retractHeight = gcodeExportState['Retract Height (in)'];
-	const feedHeight = gcodeExportState['Feed Height (in)'];
+	const feedHeight = gcodeExportState['Draw Height (in)'];
 	const feedRate = gcodeExportState['Feed Rate (ipm)'];
 	
 	// G90 - Absolute positioning mode.
@@ -268,7 +335,7 @@ G54\n
 G0 Z${retractHeight}\n
 G0 X0 Y0\n
 \n`;
-	const scale = width / canvas.clientWidth;
+	const scale = gcodeExportState['Width (in)'] / width;
 	for (let j = 0; j < sortedPaths.length; j++) {
 		gcode += `G0 X${sortedPaths[j][0][0] * scale} Y${sortedPaths[j][0][1] * scale}\n`;
 		gcode += `G1 Z${feedHeight} F${feedRate}\n`;
