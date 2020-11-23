@@ -102,7 +102,6 @@ export function stepSVGParticles() {
 			advectParticles.setUniform('u_dt', DT / guiState['Trail Subsampling'], 'FLOAT');
 			glcompute.step(advectParticles, [particlePositionState, velocityState], particlePositionState);
 			// Render particles to texture for trail effect.
-			// TODO: draw line segments instead.
 			glcompute.drawPoints(renderParticles, [particlePositionState], trailState);
 			// Render to screen.
 			glcompute.step(overlayTexture, [trailState], undefined);

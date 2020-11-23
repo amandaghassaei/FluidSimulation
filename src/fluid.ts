@@ -15,8 +15,6 @@ function calcScaleFactor(width: number, height: number) {
 	return Math.ceil(largestDim / 150);
 }
 
-// TODO: REPEAT wrap does not work in safari.
-
 // Init programs.
 const advection = glcompute.initProgram('advection', advectionSource, [
 	{

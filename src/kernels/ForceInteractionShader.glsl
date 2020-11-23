@@ -11,11 +11,5 @@ void main() {
 	vec2 radialVec = (vUV_local * 2.0 - 1.0);
 	float radiusSq = dot(radialVec, radialVec);
 	vec2 velocity = texture2D(u_velocity, vUV).xy + (1.0 - radiusSq) * u_vector * u_scaleFactor;
-	// Clip max velocity.
-	float mag = length(velocity);
-	// const float maxMag = 3.0;
-	// if (mag > 0.0 && mag > maxMag) {
-	// 	velocity *= maxMag / mag;
-	// }
 	gl_FragColor = vec4(velocity, 0, 0);
 }

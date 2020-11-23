@@ -21,13 +21,19 @@ const particlePositionState = glcompute.initDataLayer('position', {
 	numComponents: 2,
 	data: positions,
 }, true, 2);
+// We can use the initial state to reset particles after they've died.
+const particleInitialState = glcompute.initDataLayer('initialPosition', {
+	dimensions: NUM_PARTICLES,
+	type: 'float32',
+	numComponents: 2,
+	data: positions,
+}, true, 1);
 const particleAgeState = glcompute.initDataLayer('age', {
 	dimensions: NUM_PARTICLES,
 	type: 'float32',
 	numComponents: 1,
 	data: initRandomAges(new Float32Array(NUM_PARTICLES)),
 }, true, 2);
-
 // Init a render target for trail effect.
 const trailState = glcompute.initDataLayer('trails', {
 	dimensions: [canvas.clientWidth, canvas.clientHeight],
@@ -101,6 +107,11 @@ const advectParticles = glcompute.initProgram('advectParticles', advectParticles
 		dataType: 'INT',
 	},
 	{
+		name: 'u_initialPositions',
+		value: 3,
+		dataType: 'INT',
+	},
+	{
 		name: 'u_dt',
 		value: DT,
 		dataType: 'FLOAT',
@@ -135,6 +146,7 @@ export function particlesOnResize(width: number, height: number) {
 	NUM_PARTICLES = calcNumParticles(width, height);
 	positions = initRandomPositions(new Float32Array(NUM_PARTICLES * 2), width, height);
 	particlePositionState.resize(NUM_PARTICLES, positions);
+	particleInitialState.resize(NUM_PARTICLES, positions);
 	advectParticles.setUniform('u_pxSize', [1 / width, 1 / height], 'FLOAT');
 	trailState.resize([width, height]);
 }
@@ -147,7 +159,7 @@ export function stepParticles() {
 	for (let i = 0; i < NUM_RENDER_STEPS; i++) {
 		// Advect particles.
 		advectParticles.setUniform('u_dt', DT / NUM_RENDER_STEPS , 'FLOAT');
-		glcompute.step(advectParticles, [particlePositionState, velocityState, particleAgeState], particlePositionState);
+		glcompute.step(advectParticles, [particlePositionState, velocityState, particleAgeState, particleInitialState], particlePositionState);
 		// Render particles to texture for trail effect.
 		glcompute.drawPoints(renderParticles, [particlePositionState, particleAgeState, velocityState], trailState);
 	}
