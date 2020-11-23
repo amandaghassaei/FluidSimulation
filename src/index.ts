@@ -1,4 +1,4 @@
-import { stepSVGParticles } from './exports';
+import { exportsOnResize, stepSVGParticles } from './exports';
 import { 
 	fluidOnResize,
 	stepFluid,
@@ -39,6 +39,7 @@ function onResize() {
 	particlesOnResize(width, height);
 	fluidOnResize(width, height);
 	guiOnResize(width, height);
+	exportsOnResize(width, height);
 	needsResize = false;
 }
 

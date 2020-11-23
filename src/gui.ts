@@ -3,17 +3,18 @@ import { gcodeExportState, generateNewSVGParticles, generateNewSVGTrails, guiSta
 import { canvas } from './gl';
 
 const gui = new GUI({width: 400});
-gui.add(guiState, 'Regenerate');
+
 gui.add(guiState, 'Num Particles', 1, undefined, 1).onFinishChange(generateNewSVGParticles);
 gui.add(guiState, 'Trail Length', 1, undefined, 1).onFinishChange(generateNewSVGTrails);
-gui.add(guiState, 'Trail Subsampling', 1, undefined, 1).onFinishChange(generateNewSVGTrails);
+gui.add(guiState, 'Trail Subsampling', 1, 25, 1).onFinishChange(generateNewSVGTrails);
+gui.add(guiState, 'Regenerate');
 
 const saveSVGFolder = gui.addFolder(`SVG export`);
 saveSVGFolder.open();
 saveSVGFolder.add(svgExportState, 'Min Segment Length (pt)', 0, undefined, .001);
 saveSVGFolder.add(svgExportState, 'Save SVG');
 
-const saveGcodeFolder = gui.addFolder(`Gcode export`);
+const saveGcodeFolder = gui.addFolder(`G-Code export`);
 saveGcodeFolder.open();
 
 const widthController = saveGcodeFolder.add(gcodeExportState, 'Width (in)', 0, undefined, 0.001);
@@ -26,10 +27,11 @@ heightController.onFinishChange(() => {
 	widthController.setValue(gcodeExportState['Height (in)'] / canvas.clientHeight * canvas.clientWidth);
 });
 saveGcodeFolder.add(gcodeExportState, 'Min Segment Length (in)', 0, undefined, .001);
-saveGcodeFolder.add(gcodeExportState, 'Retract Height (in)', 0, undefined, .001);
-saveGcodeFolder.add(gcodeExportState, 'Draw Height (in)', 0, undefined, .001);
+saveGcodeFolder.add(gcodeExportState, 'Retract Height (in)', undefined, undefined, .001);
+saveGcodeFolder.add(gcodeExportState, 'Draw Height (in)', undefined, undefined, .001);
 saveGcodeFolder.add(gcodeExportState, 'Feed Rate (ipm)', 0, undefined, 0.5);
-saveGcodeFolder.add(gcodeExportState, 'Save Gcode');
+saveGcodeFolder.add(gcodeExportState, 'Draw Both Directions');
+saveGcodeFolder.add(gcodeExportState, 'Save G-Code');
 
 
 export function hideGUI() {
