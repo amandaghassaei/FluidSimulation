@@ -27,13 +27,13 @@ This app also supports exporting vector paths as SVG or G-Code for pen plotting 
 
 <img style="width:100%" src="docs/export.png"/>
 
-(at any time you can press spacebar again to re-enter to modify the underlying fluid simulation)
+(at any time you can press spacebar again to re-enter and modify the underlying fluid simulation)
 
 From the export workflow you can specify a number of parameters:
 
 - **Num Particles** sets the number of particles to run through the fluid.
-- **Trail Length** sets the number of time steps to iterate each particle, more time equals longer trails.
-- **Trail Subsampling** sets the resolution of the time steps for particle iteration.  Increase this if you notice that your resulting vector files are not smooth enough for your application (especially for fast-moving particles).  Increasing this number will dramatically increase the processing time required for export.
+- **Trail Length** sets the number of time steps to iterate each particle, more time equals longer trails.  Increasing this number will increase the processing time required for export.
+- **Trail Subsampling** sets the resolution of the time steps for particle iteration.  Increase this if you notice that your resulting vector files are not smooth enough for your application (especially for fast-moving particles).  Increasing this number will increase the processing time required for export.
 - **Regenerate** button initializes a new set of particles and generates trails for them.
 
 Additionally you can control some parameters for SVG export:

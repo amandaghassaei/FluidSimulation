@@ -1,5 +1,6 @@
 import { GLCompute } from 'glcompute';
 import MicroModal from 'micromodal';
+import { hideGUI } from './gui';
 
 export const canvas = document.getElementById('glcanvas') as HTMLCanvasElement;
 export const glcompute = new GLCompute(null, canvas, {antialias: true}, (message: string) => {
