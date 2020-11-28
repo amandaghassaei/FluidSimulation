@@ -1,5 +1,5 @@
 // Modify velocity field on interaction.
-precision lowp float;
+precision mediump float;
 
 varying vec2 vUV;
 varying vec2 vUV_local;

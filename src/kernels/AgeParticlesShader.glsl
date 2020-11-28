@@ -1,12 +1,12 @@
-precision lowp float;
-precision lowp int;
+precision mediump float;
+precision mediump int;
 
 varying vec2 vUV;
 uniform sampler2D u_ages;
-uniform float u_maxAge;
+uniform int u_maxAge;
 
 void main() {
-	float age = texture2D(u_ages, vUV).x + 1.0;
-	if (age > u_maxAge) age = 0.0;
+	int age = texture2D(u_ages, vUV).x + 1;
+	if (age > u_maxAge) age = 0;
 	gl_FragColor = vec4(age, 0, 0, 0);
 }

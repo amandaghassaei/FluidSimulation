@@ -1,5 +1,5 @@
-precision highp float;
-precision highp int;
+precision mediump float;
+precision mediump int;
 
 varying vec2 vUV;
 uniform float u_dt;

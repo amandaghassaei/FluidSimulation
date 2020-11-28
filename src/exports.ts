@@ -38,7 +38,7 @@ let pathGenerator: PathGenerator | null = null;
 let initialPositions = initRandomPositions(new Float32Array(guiState['Num Particles'] * 2), canvas.clientWidth, canvas.clientHeight);
 const particlePositionState = glcompute.initDataLayer('position', {
 	dimensions: guiState['Num Particles'],
-	type: 'float32',
+	type: 'float16',
 	numComponents: 2,
 	data: initialPositions,
 }, true, 2);

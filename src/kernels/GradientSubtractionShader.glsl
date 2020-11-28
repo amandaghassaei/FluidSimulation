@@ -1,5 +1,5 @@
-precision lowp float;
-precision lowp int;
+precision mediump float;
+precision mediump int;
 
 varying vec2 vUV;
 

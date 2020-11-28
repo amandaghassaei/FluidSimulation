@@ -30,9 +30,9 @@ const particleInitialState = glcompute.initDataLayer('initialPosition', {
 }, true, 1);
 const particleAgeState = glcompute.initDataLayer('age', {
 	dimensions: NUM_PARTICLES,
-	type: 'float32',
+	type: 'int32',
 	numComponents: 1,
-	data: initRandomAges(new Float32Array(NUM_PARTICLES)),
+	data: initRandomAges(new Int32Array(NUM_PARTICLES)),
 }, true, 2);
 // Init a render target for trail effect.
 const trailState = glcompute.initDataLayer('trails', {
@@ -41,7 +41,7 @@ const trailState = glcompute.initDataLayer('trails', {
 	numComponents: 4,
 }, true, 2);
 
-function initRandomAges(_ages: Float32Array) {
+function initRandomAges(_ages: Int32Array) {
 	for (let i = 0; i < NUM_PARTICLES; i++) {
 		_ages[i] = Math.round(Math.random() * PARTICLE_LIFETIME);
 	}
@@ -75,7 +75,7 @@ const renderParticles = glcompute.initProgram('renderParticles', particleFragmen
 	{
 		name: 'u_maxAge',
 		value: PARTICLE_LIFETIME,
-		dataType: 'FLOAT',
+		dataType: 'INT',
 	},
 ], PointsVertexShader);
 const ageParticles = glcompute.initProgram('ageParticles', ageParticlesSource, [

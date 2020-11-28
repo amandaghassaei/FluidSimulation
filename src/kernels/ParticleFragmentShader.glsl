@@ -1,4 +1,4 @@
-precision lowp float;
+precision mediump float;
 
 #define fadeTime 0.1
 

@@ -1,5 +1,5 @@
-precision lowp float;
-precision lowp int;
+precision mediump float;
+precision mediump int;
 
 varying vec2 vUV;
 uniform float u_dt;
@@ -24,16 +24,15 @@ vec2 getWrappedUV(vec2 uv) {
 }
 
 void main() {
-	vec2 position = texture2D(u_positions, vUV).xy;
-	vec2 canvasSize = 1.0 / u_pxSize;
-	float age = texture2D(u_ages, vUV).x;
+	int age = texture2D(u_ages, vUV).x;
 	// If this particle is being reborn, give it a random position.
-	if (age < 1.0) {
-		position = texture2D(u_initialPositions, vUV).xy;
-		gl_FragColor = vec4(position, 0, 0);
+	if (age < 1) {
+		gl_FragColor = texture2D(u_initialPositions, vUV);
 		return;
 	}
-	// Forward integrate via RK2.
+	vec2 position = texture2D(u_positions, vUV).xy;
+	// // Forward integrate via RK2.
+	vec2 canvasSize = 1.0 / u_pxSize;
 	vec2 particleUV1 = getWrappedUV(position * u_pxSize);
 	vec2 velocity1 = texture2D(u_velocity, particleUV1).xy;
 	vec2 halfStep = position + velocity1 * 0.5 * u_dt * canvasSize;
