@@ -6,10 +6,10 @@ varying vec2 vParticleUV;
 varying vec2 vUV;
 uniform sampler2D u_ages;
 uniform sampler2D u_velocity;
-uniform float u_maxAge;
+uniform int u_maxAge;
 
 void main() {
-	float age = texture2D(u_ages, vParticleUV).x / u_maxAge;
+	float age = texture2D(u_ages, vParticleUV).x / float(u_maxAge);
 	float opacity = 1.0;
 	if (age < fadeTime) {
 		opacity = age / fadeTime;

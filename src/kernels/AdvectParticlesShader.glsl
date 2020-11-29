@@ -24,7 +24,7 @@ vec2 getWrappedUV(vec2 uv) {
 }
 
 void main() {
-	int age = texture2D(u_ages, vUV).x;
+	int age = int(texture2D(u_ages, vUV).x);
 	// If this particle is being reborn, give it a random position.
 	if (age < 1) {
 		gl_FragColor = texture2D(u_initialPositions, vUV);

@@ -22,7 +22,7 @@
   "dependencies": {
     "dat.gui": "^0.7.7",
     "file-saver": "^2.0.5",
-    "glcompute": "github:amandaghassaei/glcompute",
+    "glcompute": "github:amandaghassaei/glcompute#868aa72",
     "micromodal": "^0.4.6",
     "three": "^0.122.0"
   },

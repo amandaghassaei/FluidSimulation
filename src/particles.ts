@@ -30,9 +30,9 @@ const particleInitialState = glcompute.initDataLayer('initialPosition', {
 }, true, 1);
 const particleAgeState = glcompute.initDataLayer('age', {
 	dimensions: NUM_PARTICLES,
-	type: 'int32',
+	type: 'float16', // Init this as a float16 array, bc I'm still trying to figure out how to get int textures working.
 	numComponents: 1,
-	data: initRandomAges(new Int32Array(NUM_PARTICLES)),
+	data: initRandomAges(new Float32Array(NUM_PARTICLES)),
 }, true, 2);
 // Init a render target for trail effect.
 const trailState = glcompute.initDataLayer('trails', {
@@ -41,7 +41,7 @@ const trailState = glcompute.initDataLayer('trails', {
 	numComponents: 4,
 }, true, 2);
 
-function initRandomAges(_ages: Int32Array) {
+function initRandomAges(_ages: Float32Array) {
 	for (let i = 0; i < NUM_PARTICLES; i++) {
 		_ages[i] = Math.round(Math.random() * PARTICLE_LIFETIME);
 	}
@@ -49,7 +49,7 @@ function initRandomAges(_ages: Int32Array) {
 }
 export function initRandomPositions(_positions: Float32Array, width: number, height: number) {
 	for (let i = 0; i < _positions.length / 2; i++) {
-		_positions[2 * i] = Math.random() * width;;
+		_positions[2 * i] = Math.random() * width;
 		_positions[2 * i + 1] = Math.random() * height;
 	}
 	return _positions;
@@ -87,7 +87,7 @@ const ageParticles = glcompute.initProgram('ageParticles', ageParticlesSource, [
 	{
 		name: 'u_maxAge',
 		value: PARTICLE_LIFETIME,
-		dataType: 'FLOAT',
+		dataType: 'INT',
 	},
 ]);
 const advectParticles = glcompute.initProgram('advectParticles', advectParticlesSource, [

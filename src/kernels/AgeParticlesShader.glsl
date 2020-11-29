@@ -6,7 +6,7 @@ uniform sampler2D u_ages;
 uniform int u_maxAge;
 
 void main() {
-	int age = texture2D(u_ages, vUV).x + 1;
+	int age = int(texture2D(u_ages, vUV).x) + 1;
 	if (age > u_maxAge) age = 0;
 	gl_FragColor = vec4(age, 0, 0, 0);
 }
