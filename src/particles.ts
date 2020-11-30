@@ -1,5 +1,5 @@
 import { glcompute, canvas } from './gl';
-import { PointsVertexShader, PassThroughFragmentShader } from 'glcompute';
+import { PassThroughFragmentShader, PointsVertexShaderWithDisplacement } from 'glcompute';
 import { PARTICLE_DENSITY, MAX_NUM_PARTICLES, DT, PARTICLE_LIFETIME, TRAIL_LIFETIME, NUM_RENDER_STEPS } from './constants';
 import { velocityState } from './fluid';
 const particleFragmentSource = require('./kernels/ParticleFragmentShader.glsl');
@@ -14,20 +14,20 @@ function calcNumParticles(width: number, height: number) {
 let NUM_PARTICLES = calcNumParticles(canvas.clientWidth, canvas.clientHeight);
 
 // Init particles.
-let positions = initRandomPositions(new Float32Array(NUM_PARTICLES * 2), canvas.clientWidth, canvas.clientHeight);
+let positions = initRandomPositions(new Float32Array(NUM_PARTICLES * 4), canvas.clientWidth, canvas.clientHeight);
 const particlePositionState = glcompute.initDataLayer('position', {
 	dimensions: NUM_PARTICLES,
 	type: 'float32',
-	numComponents: 2,
+	numComponents: 4, // We are storing abs position (2 components) and displacements (2 components) in this buffer.
 	data: positions,
 }, true, 2);
 // We can use the initial state to reset particles after they've died.
 const particleInitialState = glcompute.initDataLayer('initialPosition', {
 	dimensions: NUM_PARTICLES,
 	type: 'float32',
-	numComponents: 2,
+	numComponents: 4,
 	data: positions,
-}, true, 1);
+}, false, 1);
 const particleAgeState = glcompute.initDataLayer('age', {
 	dimensions: NUM_PARTICLES,
 	type: 'float32', // Init this as a float32 array, bc I'm still trying to figure out how to get int textures working.
@@ -48,9 +48,9 @@ function initRandomAges(_ages: Float32Array) {
 	return _ages;
 }
 export function initRandomPositions(_positions: Float32Array, width: number, height: number) {
-	for (let i = 0; i < _positions.length / 2; i++) {
-		_positions[2 * i] = Math.random() * width;
-		_positions[2 * i + 1] = Math.random() * height;
+	for (let i = 0; i < _positions.length / 4; i++) {
+		_positions[4 * i] = Math.random() * width;
+		_positions[4 * i + 1] = Math.random() * height;
 	}
 	return _positions;
 }
@@ -77,7 +77,7 @@ const renderParticles = glcompute.initProgram('renderParticles', particleFragmen
 		value: PARTICLE_LIFETIME,
 		dataType: 'INT',
 	},
-], PointsVertexShader);
+], PointsVertexShaderWithDisplacement);
 const ageParticles = glcompute.initProgram('ageParticles', ageParticlesSource, [
 	{
 		name: 'u_ages',
@@ -144,7 +144,7 @@ const fadeTrails = glcompute.initProgram('fadeTrails', incrementOpacitySource, [
 
 export function particlesOnResize(width: number, height: number) {
 	NUM_PARTICLES = calcNumParticles(width, height);
-	positions = initRandomPositions(new Float32Array(NUM_PARTICLES * 2), width, height);
+	positions = initRandomPositions(new Float32Array(NUM_PARTICLES * 4), width, height);
 	particlePositionState.resize(NUM_PARTICLES, positions);
 	particleInitialState.resize(NUM_PARTICLES, positions);
 	advectParticles.setUniform('u_pxSize', [1 / width, 1 / height], 'FLOAT');

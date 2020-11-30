@@ -31,27 +31,39 @@ void main() {
 		gl_FragColor = texture2D(u_initialPositions, vUV);
 		return;
 	}
-	vec2 position = texture2D(u_positions, vUV).xy;
-	// // Forward integrate via RK2.
+
 	vec2 canvasSize = 1.0 / u_pxSize;
+
+	// Store small displacements as separate number until they acumulate sufficiently.
+	// Then add them to the absolution position.
+	// This prevents small offsets on large abs positions from being lost in float16 precision.
+	vec4 positionData = texture2D(u_positions, vUV);
+	vec2 absolutePosition = positionData.rg;
+	vec2 previousDisplacement = positionData.ba;
+	if (dot(previousDisplacement, previousDisplacement) > 20.0) {
+		absolutePosition += previousDisplacement;
+		// Check if position is outside bounds.
+		if (absolutePosition.x < 0.0) {
+			absolutePosition.x += canvasSize.x;
+		} else if (absolutePosition.x > canvasSize.x) {
+			absolutePosition.x -= canvasSize.x;
+		}
+		if (absolutePosition.y < 0.0) {
+			absolutePosition.y += canvasSize.y;
+		} else if (absolutePosition.y > canvasSize.y) {
+			absolutePosition.y -= canvasSize.y;
+		}
+		previousDisplacement = vec2(0.0);
+	}
+	vec2 position = absolutePosition + previousDisplacement;
+
+	// Forward integrate via RK2.
 	vec2 particleUV1 = getWrappedUV(position * u_pxSize);
 	vec2 velocity1 = texture2D(u_velocity, particleUV1).xy;
 	vec2 halfStep = position + velocity1 * 0.5 * u_dt * canvasSize;
 	vec2 particleUV2 = getWrappedUV(halfStep * u_pxSize);
 	vec2 velocity2 = texture2D(u_velocity, particleUV2).xy;
-	vec2 nextPosition = position + velocity2 * u_dt * canvasSize;
+	vec2 displacement = previousDisplacement + velocity2 * u_dt * canvasSize;
 
-	// Check if position is outside bounds.
-	if (nextPosition.x < 0.0) {
-		nextPosition.x += canvasSize.x;
-	} else if (nextPosition.x > canvasSize.x) {
-		nextPosition.x -= canvasSize.x;
-	}
-	if (nextPosition.y < 0.0) {
-		nextPosition.y += canvasSize.y;
-	} else if (nextPosition.y > canvasSize.y) {
-		nextPosition.y -= canvasSize.y;
-	}
-
-	gl_FragColor = vec4(nextPosition, 0, 0);
+	gl_FragColor = vec4(absolutePosition, displacement);
 }
