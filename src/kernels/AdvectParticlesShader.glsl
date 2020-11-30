@@ -9,6 +9,7 @@ uniform sampler2D u_velocity;
 uniform sampler2D u_ages;
 uniform sampler2D u_initialPositions;
 
+// This is needed for safari support.
 vec2 getWrappedUV(vec2 uv) {
 	if (uv.x < 0.0) {
 		uv.x += 1.0;

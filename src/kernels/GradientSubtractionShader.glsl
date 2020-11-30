@@ -7,6 +7,7 @@ uniform vec2 u_pxSize;
 uniform sampler2D u_scalarField;
 uniform sampler2D u_vectorField;
 
+// This is needed for safari support.
 vec2 getWrappedUV(vec2 uv) {
 	if (uv.x < 0.0) {
 		uv.x += 1.0;
