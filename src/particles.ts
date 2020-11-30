@@ -30,7 +30,7 @@ const particleInitialState = glcompute.initDataLayer('initialPosition', {
 }, true, 1);
 const particleAgeState = glcompute.initDataLayer('age', {
 	dimensions: NUM_PARTICLES,
-	type: 'float16', // Init this as a float16 array, bc I'm still trying to figure out how to get int textures working.
+	type: 'float32', // Init this as a float32 array, bc I'm still trying to figure out how to get int textures working.
 	numComponents: 1,
 	data: initRandomAges(new Float32Array(NUM_PARTICLES)),
 }, true, 2);
