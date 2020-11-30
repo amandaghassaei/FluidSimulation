@@ -56,3 +56,6 @@ The resulting toolpath looks like this:
 
 <img style="width:100%" src="docs/toolpath.png"/>
 
+And some plots:
+
+<img style="width:100%" src="docs/plots.jpg"/>
