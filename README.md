@@ -13,7 +13,7 @@ To learn more about the math involved behind the simulation, check out the follo
 - [Fast Fluid Dynamics Simulation on the GPU](http://developer.download.nvidia.com/books/HTML/gpugems/gpugems_ch38.html) - a very well written tutorial about programming the Navier-Stokes equations on a GPU.
 Though not WebGL specific, it was still very useful.
 - [Fluid Simulation (with WebGL demo)](http://jamie-wong.com/2016/08/05/webgl-fluid-simulation/) - this article has some nice, interactive graphics that helped me debug my code.
-- [Stable Fluids](http://www.dgp.toronto.edu/people/stam/reality/Research/pdf/ns.pdf) - a paper about stable numerical methods for evaluating Navier-Stokes on a discrete grid.
+- [Stable Fluids](http://pages.cs.wisc.edu/~chaol/data/cs777/stam-stable_fluids.pdf) - a paper about stable numerical methods for evaluating Navier-Stokes on a discrete grid.  Also check out Stam's book [The Art of Fluid Animation](https://amzn.to/3mmA8gI).
 
 
 By [Amanda Ghassaei](http://www.amandaghassaei.com/), live demo at [apps.amandaghassaei.com/FluidSimulation/](https://apps.amandaghassaei.com/FluidSimulation/).
