@@ -59,3 +59,17 @@ The resulting toolpath looks like this:
 And some plots:
 
 <img style="width:100%" src="docs/plots.jpg"/>
+
+## Development
+
+Install all dependencies with `npm`:
+
+`npm install`
+
+Start a dev server:
+
+`npm run start`
+
+Build src to dist:
+
+`npm run build`
