@@ -1,4 +1,8 @@
 # FluidSimulation
+
+**Update: This code has been deprecated and replaced by the following repo: https://github.com/amandaghassaei/gpu-io/tree/main/examples/fluid**
+
+
 WebGL shader for mixed grid-particle fluid simulation.
 
 Live demo at [apps.amandaghassaei.com/FluidSimulation](http://apps.amandaghassaei.com/FluidSimulation/).
