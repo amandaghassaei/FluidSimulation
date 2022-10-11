@@ -1,4 +1,4 @@
-**Update: This code has been deprecated and replaced by the following repo: https://github.com/amandaghassaei/gpu-io/tree/main/examples/fluid**
+&#9888; **Update: This code has been deprecated and replaced by the following repo: https://github.com/amandaghassaei/gpu-io/tree/main/examples/fluid**
 
 
 # FluidSimulation
